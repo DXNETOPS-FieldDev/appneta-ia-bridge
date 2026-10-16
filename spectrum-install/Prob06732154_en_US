@@ -1,0 +1,16 @@
+AppNeta Intelligent Alarm ({S 304}) - {S 306} on item {S 308}
+
+SYMPTOMS:
+
+An AppNeta Intelligent Alarms ExtendedLoss rule was triggered, indicating sustained packet
+loss above the configured threshold over an extended period on the monitored path.
+
+PROBABLE CAUSES:
+
+Congestion, a degraded network link, or an intermittently failing device along the
+monitored path, as determined by AppNeta's own monitoring criteria for this rule.
+
+RECOMMENDED ACTIONS:
+
+Review this alarm's details in AppNeta's Intelligent Alarms console to determine root cause.
+This alarm clears automatically when AppNeta reports the underlying condition resolved.

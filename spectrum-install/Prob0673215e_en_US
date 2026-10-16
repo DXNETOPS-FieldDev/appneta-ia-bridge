@@ -1,0 +1,16 @@
+AppNeta Intelligent Alarm ({S 304}) - {S 306} on item {S 308}
+
+SYMPTOMS:
+
+An AppNeta Intelligent Alarms WebErrors rule was triggered, indicating an HTTP/web
+transaction error against the monitored web target.
+
+PROBABLE CAUSES:
+
+A web server error response, application fault, or connectivity issue affecting the
+monitored web target, as determined by AppNeta's own monitoring criteria for this rule.
+
+RECOMMENDED ACTIONS:
+
+Review this alarm's details in AppNeta's Intelligent Alarms console to determine root cause.
+This alarm clears automatically when AppNeta reports the underlying condition resolved.

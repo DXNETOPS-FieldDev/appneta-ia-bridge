@@ -1,0 +1,40 @@
+# Model-type-scoped EventDisp for NetworkPath. Alarm rules in EventDisp are scoped to the
+# model type that receives the event -- AppNetaAdmin/EventDisp's A/C directives never fire for
+# an event that Field 9 routes onto a NetworkPath model, even though the event itself lands
+# there correctly. Broadcom docs: "To raise an alarm on several different model types, you must
+# create separate event map entries in each model type-specific EventDisp file."
+#
+# Only the families whose itemType is NETWORK_PATH, plus Unknown (the rule-name fallback, which
+# can carry either itemType) -- MultipleWebErrors/WebErrors are WEB_PATH-only and belong in
+# WebPath.EventDisp instead. Event-tier codes are declared bare (no action) for the same reason
+# as the AppNetaAdmin copy: alarm_bridge already decided in Python that this severity doesn't
+# warrant a real alarm.
+
+0x6732150 E 20 A { v 322 SDN_INTEG.IntelligentAlarmSeverity }, 0x6732150, 301
+0x6732151 E 20 C 0x6732150, 301
+0x6732162
+0x6732163
+0x6732152 E 20 A { v 322 SDN_INTEG.IntelligentAlarmSeverity }, 0x6732152, 301
+0x6732153 E 20 C 0x6732152, 301
+0x6732164
+0x6732165
+0x6732154 E 20 A { v 322 SDN_INTEG.IntelligentAlarmSeverity }, 0x6732154, 301
+0x6732155 E 20 C 0x6732154, 301
+0x6732166
+0x6732167
+0x6732156 E 20 A { v 322 SDN_INTEG.IntelligentAlarmSeverity }, 0x6732156, 301
+0x6732157 E 20 C 0x6732156, 301
+0x6732168
+0x6732169
+0x6732158 E 20 A { v 322 SDN_INTEG.IntelligentAlarmSeverity }, 0x6732158, 301
+0x6732159 E 20 C 0x6732158, 301
+0x673216a
+0x673216b
+0x673215a E 20 A { v 322 SDN_INTEG.IntelligentAlarmSeverity }, 0x673215a, 301
+0x673215b E 20 C 0x673215a, 301
+0x673216c
+0x673216d
+0x6732180 E 20 A { v 322 SDN_INTEG.IntelligentAlarmSeverity }, 0x6732180, 301
+0x6732181 E 20 C 0x6732180, 301
+0x6732182
+0x6732183

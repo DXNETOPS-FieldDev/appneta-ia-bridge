@@ -1,0 +1,25 @@
+# Model-type-scoped EventDisp for WebPath. Alarm rules in EventDisp are scoped to the model
+# type that receives the event -- AppNetaAdmin/EventDisp's A/C directives never fire for an
+# event that Field 9 routes onto a WebPath model, even though the event itself lands there
+# correctly. Broadcom docs: "To raise an alarm on several different model types, you must
+# create separate event map entries in each model type-specific EventDisp file."
+#
+# Only the families whose itemType is WEB_PATH, plus Unknown (the rule-name fallback, which
+# can carry either itemType) -- ConnectError/Outage/ExtendedLoss/MultipleDnsErrors/
+# DnsLookupError/TestingErrorLocal are NETWORK_PATH-only and belong in NetworkPath.EventDisp
+# instead. Event-tier codes are declared bare (no action) for the same reason as the
+# AppNetaAdmin copy: alarm_bridge already decided in Python that this severity doesn't warrant
+# a real alarm.
+
+0x673215c E 20 A { v 322 SDN_INTEG.IntelligentAlarmSeverity }, 0x673215c, 301
+0x673215d E 20 C 0x673215c, 301
+0x673216e
+0x673216f
+0x673215e E 20 A { v 322 SDN_INTEG.IntelligentAlarmSeverity }, 0x673215e, 301
+0x673215f E 20 C 0x673215e, 301
+0x6732170
+0x6732171
+0x6732180 E 20 A { v 322 SDN_INTEG.IntelligentAlarmSeverity }, 0x6732180, 301
+0x6732181 E 20 C 0x6732180, 301
+0x6732182
+0x6732183

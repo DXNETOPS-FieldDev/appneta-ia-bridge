@@ -1,0 +1,831 @@
+APPNETA-INTELLIGENT-ALARM-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	NOTIFICATION-TYPE, OBJECT-TYPE, MODULE-IDENTITY, Integer32
+		FROM SNMPv2-SMI
+	NOTIFICATION-GROUP, OBJECT-GROUP
+		FROM SNMPv2-CONF
+	DisplayString
+		FROM SNMPv2-TC
+	apnEvents, apnNotifBranch, apnGroups
+		FROM APPNETA-MIB;
+
+appnetaIntelligentAlarm MODULE-IDENTITY
+	LAST-UPDATED "202608241200Z"
+	ORGANIZATION
+		"appneta-ia-bridge (not an AppNeta Inc. publication)"
+	CONTACT-INFO
+		"See the appneta-ia-bridge repository README for support contacts."
+	DESCRIPTION
+		"Sibling extension to APPNETA-MIB (enterprises.19041) adding
+		notification pairs for AppNeta Intelligent Alarms, which have no
+		native SNMP trap representation in APPNETA-MIB because Intelligent
+		Alarms are delivered by AppNeta only via webhook. Traps under this
+		MIB are generated and sent by the alarm-bridge tool, not by an
+		AppNeta appliance."
+	REVISION "202609101200Z"
+	DESCRIPTION
+		"Replaced the 18 family-only notifications with 36 (9 families x
+		Alarm/Event tier x Raised/Cleared). Severity-tier gating is done in
+		alarm_bridge/mapping.py rather than in Spectrum's EventDisp rule
+		engine."
+	REVISION "202609091200Z"
+	DESCRIPTION
+		"Replaced the 6 severity-only notifications
+		(apnIntelligentAlarm{Critical,Major,Minor}{Raised,Cleared}) with
+		18 rule-family-specific ones (9 families x Raised/Cleared),
+		matching the official AppNeta MIB's per-category trap-OID
+		pattern instead of a per-severity one. Added alarmSeverityLvl
+		(23) and fieldNineTarget (24). Severity is no longer part of
+		which trap OID is selected."
+	REVISION "202608311200Z"
+	DESCRIPTION
+		"Added alarmNetworkPathId32 and alarmMonitoringPointId32 --
+		32-bit (AppNeta v3 API) equivalents of itemId/alarmMonitoringPointId,
+		sent alongside (not instead of) the existing 64-bit (v4 API) values
+		when an APPNETA_V3_ID_OFFSET is configured, so Spectrum can
+		correlate an alarm against topology already modeled via AppNeta's
+		earlier VNA integration, which uses 32-bit IDs."
+	REVISION "202608241200Z"
+	DESCRIPTION
+		"Expanded from 2 notifications (Raised/Cleared) to 6
+		(Raised/Cleared x Critical/Major/Minor)."
+	REVISION "202608211200Z"
+	DESCRIPTION
+		"Initial version."
+	::= { apnEvents 99 }
+
+-- Branch numbers: apnAlarm=10 under apnEvents; notifications are numbered
+-- under apnNotifBranch.
+
+apnAlarm  OBJECT IDENTIFIER ::= { apnEvents 10 }
+
+alarmId OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The unique, stable identifier for this Intelligent Alarm instance,
+		constant across its RAISED/CLEARED lifecycle."
+	::= { apnAlarm 1 }
+
+orgId OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The AppNeta organization id."
+	::= { apnAlarm 2 }
+
+alarmType OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The AppNeta Intelligent Alarm type (e.g. QUALITY_OF_SERVICE)."
+	::= { apnAlarm 3 }
+
+alarmSeverity OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The alarm severity: CRITICAL, MAJOR, or MINOR."
+	::= { apnAlarm 4 }
+
+ruleId OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The id of the monitoring policy rule that triggered this alarm."
+	::= { apnAlarm 5 }
+
+ruleName OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The name of the monitoring policy rule that triggered this alarm."
+	::= { apnAlarm 6 }
+
+alarmDescription OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "Human-readable description of the condition that triggered this alarm."
+	::= { apnAlarm 7 }
+
+itemId OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The id of the monitored item (network path, web path, etc.)."
+	::= { apnAlarm 8 }
+
+itemName OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The name of the monitored item."
+	::= { apnAlarm 9 }
+
+itemType OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The type of the monitored item (e.g. NETWORK_PATH)."
+	::= { apnAlarm 10 }
+
+alarmTarget OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The target address of the monitored item."
+	::= { apnAlarm 11 }
+
+alarmMonitoringPointId OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The id of the Monitoring Point associated with this alarm."
+	::= { apnAlarm 12 }
+
+alarmMonitoringPointName OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The name of the Monitoring Point associated with this alarm."
+	::= { apnAlarm 13 }
+
+monitoringPolicyId OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The id of the monitoring policy this alarm's rule belongs to."
+	::= { apnAlarm 14 }
+
+monitoringPolicyName OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The name of the monitoring policy this alarm's rule belongs to."
+	::= { apnAlarm 15 }
+
+monitoringPolicyGroupId OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The id of the monitoring policy group this alarm's policy belongs to."
+	::= { apnAlarm 16 }
+
+monitoringPolicyGroupName OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "The name of the monitoring policy group this alarm's policy belongs to."
+	::= { apnAlarm 17 }
+
+alarmEventTimestamp OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The raisedTime (on a Raised trap) or clearedTime (on a Cleared
+		trap), as delivered by AppNeta."
+	::= { apnAlarm 18 }
+
+providerLink OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION "A deep link back to this alarm in the AppNeta UI."
+	::= { apnAlarm 19 }
+
+alarmTags OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The alarm's tags, flattened as semicolon-separated
+		category=value pairs (e.g. 'MP Type=c50;Location=Helsinki Finland')."
+	::= { apnAlarm 20 }
+
+alarmNetworkPathId32 OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The 32-bit (AppNeta v3 API) equivalent of itemId, present only
+		when the monitored item is a network path and alarm-bridge is
+		configured with ITEM_ID_FORMAT=32BIT. Lets Spectrum correlate this
+		alarm against topology already modeled via AppNeta's older VNA
+		integration, which uses 32-bit IDs. Omitted (not sent) when the
+		item isn't a network path, or when 32-bit output is disabled --
+		there is no confirmed v3 equivalent for other item types (e.g.
+		web paths)."
+	::= { apnAlarm 21 }
+
+alarmMonitoringPointId32 OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The 32-bit (AppNeta v3 API) equivalent of alarmMonitoringPointId,
+		present only when alarm-bridge is configured with
+		ITEM_ID_FORMAT=32BIT. See alarmNetworkPathId32."
+	::= { apnAlarm 22 }
+
+alarmSeverityLvl OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"Numeric severity level for Spectrum's dynamic severity-map lookup
+		(SDN_INTEG.IntelligentAlarmSeverity): CRITICAL=40, MAJOR=30,
+		MINOR=20, WARNING=10. alarmSeverity (object 4) carries the
+		original string value unchanged for other consumers (e.g. the
+		Smarts integration) -- this object exists purely so Spectrum's
+		EventDisp can resolve real alarm severity dynamically instead of
+		it being baked into the trap OID."
+	::= { apnAlarm 23 }
+
+fieldNineTarget OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The v3-API id (NetworkPath.pathId or WebPath's equivalent,
+		Spectrum attribute 0x673009f) used as Spectrum's Southbound
+		Gateway Toolkit Variable ID Field 9 (Target Attribute) routing
+		value, present only for NETWORK_PATH/WEB_PATH items when
+		alarm-bridge is configured with an APPNETA_V3_ID_OFFSET. Omitted
+		for MONITORING_POINT (no matching attribute exists on that model
+		type) or when no offset is configured."
+	::= { apnAlarm 24 }
+
+apnIntelligentAlarmConnectErrorAlarmRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the ConnectError rule family has been raised at MAJOR/CRITICAL severity."
+	::= { apnNotifBranch 90 }
+
+apnIntelligentAlarmConnectErrorAlarmCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the ConnectError rule family has been cleared."
+	::= { apnNotifBranch 91 }
+
+apnIntelligentAlarmConnectErrorEventRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the ConnectError rule family has occurred at MINOR/WARNING severity (logged as an event, not an alarm)."
+	::= { apnNotifBranch 92 }
+
+apnIntelligentAlarmConnectErrorEventCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the ConnectError rule family (MINOR/WARNING) has cleared."
+	::= { apnNotifBranch 93 }
+
+apnIntelligentAlarmOutageAlarmRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the Outage rule family has been raised at MAJOR/CRITICAL severity."
+	::= { apnNotifBranch 94 }
+
+apnIntelligentAlarmOutageAlarmCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the Outage rule family has been cleared."
+	::= { apnNotifBranch 95 }
+
+apnIntelligentAlarmOutageEventRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the Outage rule family has occurred at MINOR/WARNING severity (logged as an event, not an alarm)."
+	::= { apnNotifBranch 96 }
+
+apnIntelligentAlarmOutageEventCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the Outage rule family (MINOR/WARNING) has cleared."
+	::= { apnNotifBranch 97 }
+
+apnIntelligentAlarmExtendedLossAlarmRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the ExtendedLoss rule family has been raised at MAJOR/CRITICAL severity."
+	::= { apnNotifBranch 98 }
+
+apnIntelligentAlarmExtendedLossAlarmCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the ExtendedLoss rule family has been cleared."
+	::= { apnNotifBranch 99 }
+
+apnIntelligentAlarmExtendedLossEventRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the ExtendedLoss rule family has occurred at MINOR/WARNING severity (logged as an event, not an alarm)."
+	::= { apnNotifBranch 100 }
+
+apnIntelligentAlarmExtendedLossEventCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the ExtendedLoss rule family (MINOR/WARNING) has cleared."
+	::= { apnNotifBranch 101 }
+
+apnIntelligentAlarmMultipleDnsErrorsAlarmRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the MultipleDnsErrors rule family has been raised at MAJOR/CRITICAL severity."
+	::= { apnNotifBranch 102 }
+
+apnIntelligentAlarmMultipleDnsErrorsAlarmCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the MultipleDnsErrors rule family has been cleared."
+	::= { apnNotifBranch 103 }
+
+apnIntelligentAlarmMultipleDnsErrorsEventRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the MultipleDnsErrors rule family has occurred at MINOR/WARNING severity (logged as an event, not an alarm)."
+	::= { apnNotifBranch 104 }
+
+apnIntelligentAlarmMultipleDnsErrorsEventCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the MultipleDnsErrors rule family (MINOR/WARNING) has cleared."
+	::= { apnNotifBranch 105 }
+
+apnIntelligentAlarmDnsLookupErrorAlarmRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the DnsLookupError rule family has been raised at MAJOR/CRITICAL severity."
+	::= { apnNotifBranch 106 }
+
+apnIntelligentAlarmDnsLookupErrorAlarmCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the DnsLookupError rule family has been cleared."
+	::= { apnNotifBranch 107 }
+
+apnIntelligentAlarmDnsLookupErrorEventRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the DnsLookupError rule family has occurred at MINOR/WARNING severity (logged as an event, not an alarm)."
+	::= { apnNotifBranch 108 }
+
+apnIntelligentAlarmDnsLookupErrorEventCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the DnsLookupError rule family (MINOR/WARNING) has cleared."
+	::= { apnNotifBranch 109 }
+
+apnIntelligentAlarmTestingErrorLocalAlarmRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the TestingErrorLocal rule family has been raised at MAJOR/CRITICAL severity."
+	::= { apnNotifBranch 110 }
+
+apnIntelligentAlarmTestingErrorLocalAlarmCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the TestingErrorLocal rule family has been cleared."
+	::= { apnNotifBranch 111 }
+
+apnIntelligentAlarmTestingErrorLocalEventRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the TestingErrorLocal rule family has occurred at MINOR/WARNING severity (logged as an event, not an alarm)."
+	::= { apnNotifBranch 112 }
+
+apnIntelligentAlarmTestingErrorLocalEventCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the TestingErrorLocal rule family (MINOR/WARNING) has cleared."
+	::= { apnNotifBranch 113 }
+
+apnIntelligentAlarmMultipleWebErrorsAlarmRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the MultipleWebErrors rule family has been raised at MAJOR/CRITICAL severity."
+	::= { apnNotifBranch 114 }
+
+apnIntelligentAlarmMultipleWebErrorsAlarmCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the MultipleWebErrors rule family has been cleared."
+	::= { apnNotifBranch 115 }
+
+apnIntelligentAlarmMultipleWebErrorsEventRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the MultipleWebErrors rule family has occurred at MINOR/WARNING severity (logged as an event, not an alarm)."
+	::= { apnNotifBranch 116 }
+
+apnIntelligentAlarmMultipleWebErrorsEventCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the MultipleWebErrors rule family (MINOR/WARNING) has cleared."
+	::= { apnNotifBranch 117 }
+
+apnIntelligentAlarmWebErrorsAlarmRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the WebErrors rule family has been raised at MAJOR/CRITICAL severity."
+	::= { apnNotifBranch 118 }
+
+apnIntelligentAlarmWebErrorsAlarmCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the WebErrors rule family has been cleared."
+	::= { apnNotifBranch 119 }
+
+apnIntelligentAlarmWebErrorsEventRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the WebErrors rule family has occurred at MINOR/WARNING severity (logged as an event, not an alarm)."
+	::= { apnNotifBranch 120 }
+
+apnIntelligentAlarmWebErrorsEventCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the WebErrors rule family (MINOR/WARNING) has cleared."
+	::= { apnNotifBranch 121 }
+
+apnIntelligentAlarmUnknownAlarmRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the Unknown rule family has been raised at MAJOR/CRITICAL severity."
+	::= { apnNotifBranch 122 }
+
+apnIntelligentAlarmUnknownAlarmCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the Unknown rule family has been cleared."
+	::= { apnNotifBranch 123 }
+
+apnIntelligentAlarmUnknownEventRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the Unknown rule family has occurred at MINOR/WARNING severity (logged as an event, not an alarm)."
+	::= { apnNotifBranch 124 }
+
+apnIntelligentAlarmUnknownEventCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, alarmSeverityLvl,
+		ruleId, ruleName, alarmDescription, itemId, itemName, itemType,
+		alarmTarget, alarmMonitoringPointId, alarmMonitoringPointName,
+		monitoringPolicyId, monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags, alarmNetworkPathId32, alarmMonitoringPointId32,
+		fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that an AppNeta Intelligent Alarm in the Unknown rule family (MINOR/WARNING) has cleared."
+	::= { apnNotifBranch 125 }
+
+apnIntelligentAlarmGeneralCriticalRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, ruleId, ruleName,
+		alarmDescription, itemId, itemName, itemType, alarmTarget,
+		alarmMonitoringPointId, alarmMonitoringPointName, monitoringPolicyId,
+		monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that a general (non-path-associated) AppNeta Intelligent Alarm has been raised at CRITICAL severity."
+	::= { apnNotifBranch 126 }
+
+apnIntelligentAlarmGeneralCriticalCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, ruleId, ruleName,
+		alarmDescription, itemId, itemName, itemType, alarmTarget,
+		alarmMonitoringPointId, alarmMonitoringPointName, monitoringPolicyId,
+		monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that a general (non-path-associated) AppNeta Intelligent Alarm has been cleared (CRITICAL)."
+	::= { apnNotifBranch 127 }
+
+apnIntelligentAlarmGeneralMajorRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, ruleId, ruleName,
+		alarmDescription, itemId, itemName, itemType, alarmTarget,
+		alarmMonitoringPointId, alarmMonitoringPointName, monitoringPolicyId,
+		monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that a general (non-path-associated) AppNeta Intelligent Alarm has been raised at MAJOR severity."
+	::= { apnNotifBranch 128 }
+
+apnIntelligentAlarmGeneralMajorCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, ruleId, ruleName,
+		alarmDescription, itemId, itemName, itemType, alarmTarget,
+		alarmMonitoringPointId, alarmMonitoringPointName, monitoringPolicyId,
+		monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that a general (non-path-associated) AppNeta Intelligent Alarm has been cleared (MAJOR)."
+	::= { apnNotifBranch 129 }
+
+apnIntelligentAlarmGeneralMinorRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, ruleId, ruleName,
+		alarmDescription, itemId, itemName, itemType, alarmTarget,
+		alarmMonitoringPointId, alarmMonitoringPointName, monitoringPolicyId,
+		monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that a general (non-path-associated) AppNeta Intelligent Alarm has been raised at MINOR severity."
+	::= { apnNotifBranch 130 }
+
+apnIntelligentAlarmGeneralMinorCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, ruleId, ruleName,
+		alarmDescription, itemId, itemName, itemType, alarmTarget,
+		alarmMonitoringPointId, alarmMonitoringPointName, monitoringPolicyId,
+		monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that a general (non-path-associated) AppNeta Intelligent Alarm has been cleared (MINOR)."
+	::= { apnNotifBranch 131 }
+
+apnIntelligentAlarmGeneralWarningRaised NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, ruleId, ruleName,
+		alarmDescription, itemId, itemName, itemType, alarmTarget,
+		alarmMonitoringPointId, alarmMonitoringPointName, monitoringPolicyId,
+		monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that a general (non-path-associated) AppNeta Intelligent Alarm has been raised at WARNING severity."
+	::= { apnNotifBranch 132 }
+
+apnIntelligentAlarmGeneralWarningCleared NOTIFICATION-TYPE
+	OBJECTS { alarmId, orgId, alarmType, alarmSeverity, ruleId, ruleName,
+		alarmDescription, itemId, itemName, itemType, alarmTarget,
+		alarmMonitoringPointId, alarmMonitoringPointName, monitoringPolicyId,
+		monitoringPolicyName, monitoringPolicyGroupId,
+		monitoringPolicyGroupName, alarmEventTimestamp, providerLink,
+		alarmTags }
+	STATUS     current
+	DESCRIPTION "A trap to indicate that a general (non-path-associated) AppNeta Intelligent Alarm has been cleared (WARNING)."
+	::= { apnNotifBranch 133 }
+
+apnIntelligentAlarmGrp NOTIFICATION-GROUP
+	NOTIFICATIONS { apnIntelligentAlarmConnectErrorAlarmRaised,
+		apnIntelligentAlarmConnectErrorAlarmCleared,
+		apnIntelligentAlarmConnectErrorEventRaised,
+		apnIntelligentAlarmConnectErrorEventCleared,
+		apnIntelligentAlarmOutageAlarmRaised,
+		apnIntelligentAlarmOutageAlarmCleared,
+		apnIntelligentAlarmOutageEventRaised,
+		apnIntelligentAlarmOutageEventCleared,
+		apnIntelligentAlarmExtendedLossAlarmRaised,
+		apnIntelligentAlarmExtendedLossAlarmCleared,
+		apnIntelligentAlarmExtendedLossEventRaised,
+		apnIntelligentAlarmExtendedLossEventCleared,
+		apnIntelligentAlarmMultipleDnsErrorsAlarmRaised,
+		apnIntelligentAlarmMultipleDnsErrorsAlarmCleared,
+		apnIntelligentAlarmMultipleDnsErrorsEventRaised,
+		apnIntelligentAlarmMultipleDnsErrorsEventCleared,
+		apnIntelligentAlarmDnsLookupErrorAlarmRaised,
+		apnIntelligentAlarmDnsLookupErrorAlarmCleared,
+		apnIntelligentAlarmDnsLookupErrorEventRaised,
+		apnIntelligentAlarmDnsLookupErrorEventCleared,
+		apnIntelligentAlarmTestingErrorLocalAlarmRaised,
+		apnIntelligentAlarmTestingErrorLocalAlarmCleared,
+		apnIntelligentAlarmTestingErrorLocalEventRaised,
+		apnIntelligentAlarmTestingErrorLocalEventCleared,
+		apnIntelligentAlarmMultipleWebErrorsAlarmRaised,
+		apnIntelligentAlarmMultipleWebErrorsAlarmCleared,
+		apnIntelligentAlarmMultipleWebErrorsEventRaised,
+		apnIntelligentAlarmMultipleWebErrorsEventCleared,
+		apnIntelligentAlarmWebErrorsAlarmRaised,
+		apnIntelligentAlarmWebErrorsAlarmCleared,
+		apnIntelligentAlarmWebErrorsEventRaised,
+		apnIntelligentAlarmWebErrorsEventCleared,
+		apnIntelligentAlarmUnknownAlarmRaised,
+		apnIntelligentAlarmUnknownAlarmCleared,
+		apnIntelligentAlarmUnknownEventRaised,
+		apnIntelligentAlarmUnknownEventCleared,
+		apnIntelligentAlarmGeneralCriticalRaised,
+		apnIntelligentAlarmGeneralCriticalCleared,
+		apnIntelligentAlarmGeneralMajorRaised,
+		apnIntelligentAlarmGeneralMajorCleared,
+		apnIntelligentAlarmGeneralMinorRaised,
+		apnIntelligentAlarmGeneralMinorCleared,
+		apnIntelligentAlarmGeneralWarningRaised,
+		apnIntelligentAlarmGeneralWarningCleared }
+	STATUS     current
+	DESCRIPTION "Group containing the Intelligent Alarm notifications."
+	::= { apnGroups 20 }
+
+END

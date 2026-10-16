@@ -1,0 +1,17 @@
+AppNeta Intelligent Alarm (General, MAJOR) - {S 306} on item {S 308}
+
+SYMPTOMS:
+
+An AppNeta Intelligent Alarms rule was triggered at MAJOR severity. This Spectrum instance
+uses the general AppNeta Intelligent Alarms integration (no VNA-AppNeta path models), so the
+alarm is raised on the AppNeta Intelligent Alarms model rather than on a per-path model.
+
+PROBABLE CAUSES:
+
+The monitored item crossed a threshold defined by the named AppNeta alarm rule, as determined
+by AppNeta's own monitoring criteria for that rule.
+
+RECOMMENDED ACTIONS:
+
+Review this alarm's details in AppNeta's Intelligent Alarms console to determine root cause.
+This alarm clears automatically when AppNeta reports the underlying condition resolved.

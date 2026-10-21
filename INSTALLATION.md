@@ -8,7 +8,7 @@ the matching configuration on your Spectrum or Smarts server. Allow about an hou
 
 You need:
 
-- A Linux host with Docker, reachable from the internet on `443/tcp`.
+- A Linux host with Docker and `git` installed, reachable from the internet on `443/tcp`.
 - A DNS name for that host (examples below use `ia-bridge.example.com`).
 - A TLS certificate and private key for that name from a publicly trusted certificate authority.
   The certificate file must contain the full chain (your certificate followed by the
@@ -35,7 +35,7 @@ that carry an `AppNetaPathIdentifier` attribute (`0x673009f`), or ask your Spect
 ```bash
 git clone https://github.com/DXNETOPS-FieldDev/appneta-ia-bridge.git appneta-ia-bridge
 cd appneta-ia-bridge
-git checkout v0.1.1
+git checkout v0.1.2
 docker build -t appneta-ia-bridge .
 ```
 

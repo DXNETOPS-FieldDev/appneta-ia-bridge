@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.2
+
+Documentation update.
+
+- `INSTALLATION.md` now lists `git` as a prerequisite for step 1.
+
 ## v0.1.1
 
 License and configuration-message updates.

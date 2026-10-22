@@ -10,6 +10,7 @@ class TestLoadConfig(unittest.TestCase):
         config = load_config({
             "TRAP_DESTINATION_1_HOST": "spectrum.example.com",
             "TRAP_DESTINATION_1_SCHEME": "general",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "NONE",
         })
         self.assertEqual(config.listen_port, 8080)
@@ -38,6 +39,7 @@ class TestLoadConfig(unittest.TestCase):
         config = load_config({
             "TRAP_DESTINATION_1_HOST": "s",
             "TRAP_DESTINATION_1_SCHEME": "general",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "BEARER",
             "AUTH_TOKEN": "secret",
         })
@@ -56,6 +58,7 @@ class TestLoadConfig(unittest.TestCase):
             config = load_config({
                 "TRAP_DESTINATION_1_HOST": "s",
                 "TRAP_DESTINATION_1_SCHEME": "general",
+                "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
                 "AUTH_TYPE": "BEARER",
                 "AUTH_TOKEN_FILE": str(token_path),
             })
@@ -68,6 +71,7 @@ class TestLoadConfig(unittest.TestCase):
             config = load_config({
                 "TRAP_DESTINATION_1_HOST": "s",
                 "TRAP_DESTINATION_1_SCHEME": "general",
+                "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
                 "AUTH_TYPE": "BEARER",
                 "AUTH_TOKEN": "from-env",
                 "AUTH_TOKEN_FILE": str(token_path),
@@ -89,6 +93,7 @@ class TestLoadConfig(unittest.TestCase):
             config = load_config({
                 "TRAP_DESTINATION_1_HOST": "s",
                 "TRAP_DESTINATION_1_SCHEME": "general",
+                "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
                 "AUTH_TYPE": "BASIC",
                 "AUTH_USERNAME": "svc",
                 "AUTH_PASSWORD_FILE": str(password_path),
@@ -99,6 +104,7 @@ class TestLoadConfig(unittest.TestCase):
         config = load_config({
             "TRAP_DESTINATION_1_HOST": "s",
             "TRAP_DESTINATION_1_SCHEME": "general",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "NONE",
             "LISTEN_PORT": "9090",
         })
@@ -108,6 +114,7 @@ class TestLoadConfig(unittest.TestCase):
         config = load_config({
             "TRAP_DESTINATION_1_HOST": "s",
             "TRAP_DESTINATION_1_SCHEME": "general",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "NONE",
         })
         self.assertIsNone(config.v3_id_offset)
@@ -120,6 +127,7 @@ class TestLoadConfig(unittest.TestCase):
             load_config({
                 "TRAP_DESTINATION_1_HOST": "s",
                 "TRAP_DESTINATION_1_SCHEME": "vna",
+                "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
                 "AUTH_TYPE": "NONE",
             })
 
@@ -127,6 +135,7 @@ class TestLoadConfig(unittest.TestCase):
         config = load_config({
             "TRAP_DESTINATION_1_HOST": "s",
             "TRAP_DESTINATION_1_SCHEME": "vna",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "NONE",
             "APPNETA_V3_ID_OFFSET": "2199023255552",
         })
@@ -136,6 +145,7 @@ class TestLoadConfig(unittest.TestCase):
         config = load_config({
             "TRAP_DESTINATION_1_HOST": "s",
             "TRAP_DESTINATION_1_SCHEME": "vna",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "NONE",
             "APPNETA_NIS_SERVER": "app-12",
         })
@@ -148,6 +158,7 @@ class TestLoadConfig(unittest.TestCase):
             load_config({
                 "TRAP_DESTINATION_1_HOST": "s",
                 "TRAP_DESTINATION_1_SCHEME": "vna",
+                "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
                 "AUTH_TYPE": "NONE",
                 "APPNETA_NIS_SERVER": "app-99",
             })
@@ -156,6 +167,7 @@ class TestLoadConfig(unittest.TestCase):
         config = load_config({
             "TRAP_DESTINATION_1_HOST": "s",
             "TRAP_DESTINATION_1_SCHEME": "vna",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "NONE",
             "APPNETA_NIS_SERVER": "app-12",
             "APPNETA_V3_ID_OFFSET": "42",
@@ -168,6 +180,7 @@ class TestTrapDestinations(unittest.TestCase):
         config = load_config({
             "TRAP_DESTINATION_1_HOST": "spectrum.example.com",
             "TRAP_DESTINATION_1_SCHEME": "vna",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "NONE",
             "APPNETA_V3_ID_OFFSET": "42",
         })
@@ -183,6 +196,7 @@ class TestTrapDestinations(unittest.TestCase):
             "TRAP_DESTINATION_1_PORT": "1620",
             "TRAP_DESTINATION_1_COMMUNITY": "private",
             "TRAP_DESTINATION_1_SCHEME": "general",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "NONE",
         })
         [dest] = config.trap_destinations
@@ -194,8 +208,10 @@ class TestTrapDestinations(unittest.TestCase):
         config = load_config({
             "TRAP_DESTINATION_1_HOST": "spectrum",
             "TRAP_DESTINATION_1_SCHEME": "vna",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "TRAP_DESTINATION_2_HOST": "smarts",
             "TRAP_DESTINATION_2_SCHEME": "general",
+            "TRAP_DESTINATION_2_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "NONE",
             "APPNETA_V3_ID_OFFSET": "42",
         })
@@ -210,6 +226,7 @@ class TestTrapDestinations(unittest.TestCase):
         config = load_config({
             "TRAP_DESTINATION_1_HOST": "spectrum",
             "TRAP_DESTINATION_1_SCHEME": "vna",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "TRAP_DESTINATION_3_HOST": "smarts",
             "AUTH_TYPE": "NONE",
             "APPNETA_V3_ID_OFFSET": "42",
@@ -222,6 +239,7 @@ class TestTrapDestinations(unittest.TestCase):
             load_config({
                 "TRAP_DESTINATION_1_HOST": "s",
                 "TRAP_DESTINATION_1_SCHEME": "bogus",
+                "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
                 "AUTH_TYPE": "NONE",
             })
 
@@ -235,6 +253,49 @@ class TestTrapDestinations(unittest.TestCase):
             })
 
 
+class TestSourceAddress(unittest.TestCase):
+    def _env(self, **extra):
+        env = {
+            "TRAP_DESTINATION_1_HOST": "s",
+            "TRAP_DESTINATION_1_SCHEME": "general",
+            "AUTH_TYPE": "NONE",
+        }
+        env.update(extra)
+        return env
+
+    def test_source_address_required(self):
+        with self.assertRaises(ConfigError) as ctx:
+            load_config(self._env())
+        self.assertIn("TRAP_DESTINATION_1_SOURCE_ADDRESS", str(ctx.exception))
+        self.assertIn("is not set", str(ctx.exception))
+        self.assertNotIn("None", str(ctx.exception))
+
+    def test_source_address_valid_ipv4_is_kept(self):
+        config = load_config(self._env(TRAP_DESTINATION_1_SOURCE_ADDRESS="192.0.2.147"))
+        self.assertEqual(config.trap_destinations[0].source_address, "192.0.2.147")
+
+    def test_source_address_none_is_opt_out_case_and_space_insensitive(self):
+        for raw in ("none", "NONE", " None "):
+            config = load_config(self._env(TRAP_DESTINATION_1_SOURCE_ADDRESS=raw))
+            self.assertEqual(config.trap_destinations[0].source_address, "", raw)
+
+    def test_source_address_invalid_values_rejected(self):
+        for raw in ("256.1.1.1", "1.2.3", "01.02.03.04", "::1", "host.example.com", ""):
+            with self.assertRaises(ConfigError, msg=raw) as ctx:
+                load_config(self._env(TRAP_DESTINATION_1_SOURCE_ADDRESS=raw))
+            self.assertIn("TRAP_DESTINATION_1_SOURCE_ADDRESS", str(ctx.exception), raw)
+
+    def test_source_address_is_per_destination(self):
+        config = load_config(self._env(
+            TRAP_DESTINATION_1_SOURCE_ADDRESS="192.0.2.147",
+            TRAP_DESTINATION_2_HOST="smarts",
+            TRAP_DESTINATION_2_SCHEME="general",
+            TRAP_DESTINATION_2_SOURCE_ADDRESS="none",
+        ))
+        self.assertEqual(config.trap_destinations[0].source_address, "192.0.2.147")
+        self.assertEqual(config.trap_destinations[1].source_address, "")
+
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -243,6 +304,7 @@ class TestNumericEnvValidation(unittest.TestCase):
     BASE = {
         "TRAP_DESTINATION_1_HOST": "h",
         "TRAP_DESTINATION_1_SCHEME": "general",
+        "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
         "AUTH_TYPE": "NONE",
     }
 

@@ -1,5 +1,6 @@
 """Environment-variable-driven configuration for appneta-ia-bridge."""
 
+import ipaddress
 import os
 from dataclasses import dataclass
 
@@ -33,12 +34,22 @@ NIS_SERVER_V3_ID_OFFSETS: dict[str, int] = {
 }
 
 
+def parse_source_address(raw: str) -> str:
+    """'none' (any case, surrounding whitespace) -> "" (opt-out); otherwise the
+    normalized dotted IPv4. Raises ValueError for anything else, including empty."""
+    value = raw.strip()
+    if value.lower() == "none":
+        return ""
+    return str(ipaddress.IPv4Address(value))
+
+
 @dataclass
 class TrapDestination:
     host: str
     port: int
     community: str
     scheme: str = "vna"
+    source_address: str = ""  # "" = opt-out; otherwise a validated dotted IPv4
 
 
 @dataclass
@@ -79,7 +90,7 @@ def _read_secret(env, value_key: str, file_key: str) -> str:
 
 
 def _parse_trap_destinations(env, missing: list[str]) -> list[TrapDestination]:
-    """Parses TRAP_DESTINATION_<N>_{HOST,PORT,COMMUNITY,SCHEME}, N=1,2,... Stops
+    """Parses TRAP_DESTINATION_<N>_{HOST,PORT,COMMUNITY,SCHEME,SOURCE_ADDRESS}, N=1,2,... Stops
     at the first N with no _HOST set. At least destination 1 is required."""
     destinations = []
     n = 1
@@ -100,11 +111,25 @@ def _parse_trap_destinations(env, missing: list[str]) -> list[TrapDestination]:
                 missing.append(
                     f"TRAP_DESTINATION_{n}_SCHEME must be 'vna' or 'general', got {scheme!r}"
                 )
+        raw_source = env.get(f"TRAP_DESTINATION_{n}_SOURCE_ADDRESS")
+        source_address = ""
+        try:
+            if raw_source is None:
+                raise ValueError("unset")
+            source_address = parse_source_address(raw_source)
+        except ValueError:
+            missing.append(
+                f"TRAP_DESTINATION_{n}_SOURCE_ADDRESS is required and must be a dotted IPv4 "
+                f"address (the Spectrum model / Smarts element IP for this sender), or 'none' "
+                f"to opt out, "
+                + ("but it is not set" if raw_source is None else f"got {raw_source!r}")
+            )
         destinations.append(TrapDestination(
             host=host,
             port=_int_env(f"TRAP_DESTINATION_{n}_PORT", env.get(f"TRAP_DESTINATION_{n}_PORT", "162")),
             community=env.get(f"TRAP_DESTINATION_{n}_COMMUNITY", "public"),
             scheme=scheme,
+            source_address=source_address,
         ))
         n += 1
 

@@ -26,6 +26,26 @@ class TestModuleEntrypoint(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("TRAP_DESTINATION_1_HOST", result.stderr)
 
+    def test_missing_source_address_exits_nonzero_naming_variable(self):
+        """Everything else valid, SOURCE_ADDRESS unset: the only failure is the claim."""
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "alarm_bridge"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                env={
+                    "PATH": "/usr/bin:/bin",
+                    "TRAP_DESTINATION_1_HOST": "192.0.2.10",
+                    "TRAP_DESTINATION_1_SCHEME": "general",
+                    "AUTH_TYPE": "NONE",
+                },
+            )
+        except subprocess.TimeoutExpired:
+            self.fail("bridge did not exit within 10s; SOURCE_ADDRESS validation regressed")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("TRAP_DESTINATION_1_SOURCE_ADDRESS", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

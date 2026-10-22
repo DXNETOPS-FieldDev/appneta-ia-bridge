@@ -1,16 +1,19 @@
 """Builds and sends SNMPv2c trap PDUs (RFC 3416) using only the BER
 primitives in ber.py -- no third-party SNMP library dependency."""
 
+import ipaddress
 import socket
 
 from alarm_bridge.ber import encode_integer, encode_octet_string, encode_oid, encode_sequence
 
 SYSUPTIME_OID = "1.3.6.1.2.1.1.3.0"
 SNMP_TRAP_OID_OID = "1.3.6.1.6.3.1.1.4.1.0"
+SNMP_TRAP_ADDRESS_OID = "1.3.6.1.6.3.18.1.3.0"
 
 _SNMPV2C_VERSION = 1
 _TRAP_PDU_TAG = 0xA7
 _TIMETICKS_TAG = 0x43
+_IPADDRESS_TAG = 0x40
 
 
 def _encode_varbind(oid: str, value, value_type: str) -> bytes:
@@ -22,6 +25,12 @@ def _encode_varbind(oid: str, value, value_type: str) -> bytes:
         value_bytes = encode_oid(str(value))
     elif value_type == "timeticks":
         value_bytes = encode_integer(int(value), tag=_TIMETICKS_TAG)
+    elif value_type == "ipaddress":
+        try:
+            packed = ipaddress.IPv4Address(str(value)).packed
+        except ipaddress.AddressValueError as exc:
+            raise ValueError(f"Invalid IPv4 address: {value!r}") from exc
+        value_bytes = bytes([_IPADDRESS_TAG, len(packed)]) + packed
     else:
         raise ValueError(f"Unsupported varbind type: {value_type!r}")
     return encode_sequence(encode_oid(oid) + value_bytes)

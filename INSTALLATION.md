@@ -35,7 +35,7 @@ that carry an `AppNetaPathIdentifier` attribute (`0x673009f`), or ask your Spect
 ```bash
 git clone https://github.com/DXNETOPS-FieldDev/appneta-ia-bridge.git appneta-ia-bridge
 cd appneta-ia-bridge
-git checkout v0.1.2
+git checkout v0.1.3
 docker build -t appneta-ia-bridge .
 ```
 
@@ -86,6 +86,7 @@ docker run -d \
   --restart unless-stopped \
   -e TRAP_DESTINATION_1_HOST=spectrum.example.com \
   -e TRAP_DESTINATION_1_SCHEME=general \
+  -e TRAP_DESTINATION_1_SOURCE_ADDRESS=<ip-of-appneta-model> \
   -e AUTH_TYPE=BEARER \
   -e AUTH_TOKEN_FILE=/run/secrets/auth_token \
   -v /etc/appneta-ia-bridge/secrets:/run/secrets:ro \
@@ -99,6 +100,7 @@ can compute the 32-bit IDs:
 
 ```bash
   -e TRAP_DESTINATION_1_SCHEME=vna \
+  -e TRAP_DESTINATION_1_SOURCE_ADDRESS=<ip-of-appneta-model> \
   -e APPNETA_NIS_SERVER=app-12 \
 ```
 
@@ -107,7 +109,15 @@ can compute the 32-bit IDs:
 `APPNETA_V3_ID_OFFSET` to the offset between your v4 and v3 IDs instead (see
 [`README.md`](README.md#configuration)). The container refuses to start without one of them.
 
-More than one destination: add `TRAP_DESTINATION_2_HOST`, `TRAP_DESTINATION_2_SCHEME`, and so on.
+`TRAP_DESTINATION_<N>_SOURCE_ADDRESS` is required for every destination. Set it to the IP address the
+receiver uses for the AppNeta device: the IP of the AppNeta model in Spectrum, or the element's IP in
+Smarts (for Spectrum, the same IP as the model's Monitoring Point IP Address; for Smarts, the host
+element the alarms should attach to). It is sent in each trap so the receiver can identify the device even when NAT or a container
+hides the bridge's real address. Set it to `none` to send no claim. Do not use the IP address of
+another real device: its alarms would be routed to that device.
+
+More than one destination: add `TRAP_DESTINATION_2_HOST`, `TRAP_DESTINATION_2_SCHEME`,
+`TRAP_DESTINATION_2_SOURCE_ADDRESS`, and so on.
 Non-default port or community: `TRAP_DESTINATION_<N>_PORT` and `TRAP_DESTINATION_<N>_COMMUNITY`.
 
 Check that it started:
@@ -158,7 +168,10 @@ Full prerequisites, backups, and rollback are in
 5. In OneClick, create an `AppNetaAdmin` model for the bridge: **Locator** → **Universe** →
    **Topology** tab → **Create New Model by Type** → `AppNetaAdmin`. Set **Name** (shown on each
    alarm, for example `AppNeta Intelligent Alarms`) and **Monitoring Point IP Address** (the
-   address the bridge sends traps *from*). Then, on the new model's **Attributes** tab, set
+   address the bridge's traps are attributed to). With the v0.1.3 sender-identity claim, the
+   bridge no longer needs to be the real sender of this address: set
+   `TRAP_DESTINATION_<N>_SOURCE_ADDRESS` to this same IP. Do not use the IP of another real device
+   already modeled in Spectrum. Then, on the new model's **Attributes** tab, set
    `map_traps_to_this_model_using_IP_header` (`0x3dc000b`) to `Yes`. Without this, traps are not
    matched to the model. Details and a REST equivalent are in
    [`spectrum-install/README.md`](spectrum-install/README.md#step-by-step-install).

@@ -2,7 +2,7 @@ import socket
 import threading
 import unittest
 
-from alarm_bridge.snmp_trap import build_snmpv2_trap, send_trap
+from alarm_bridge.snmp_trap import SNMP_TRAP_ADDRESS_OID, _encode_varbind, build_snmpv2_trap, send_trap
 from alarm_bridge.ber import encode_octet_string, encode_oid
 
 
@@ -34,6 +34,30 @@ class TestBuildSnmpv2Trap(unittest.TestCase):
         declared_length = message[1]
         self.assertLess(declared_length, 0x80)
         self.assertEqual(len(message) - 2, declared_length)
+
+
+class TestIpAddressVarbind(unittest.TestCase):
+    def test_ipaddress_varbind_encodes_tag_0x40_with_four_octets(self):
+        varbind = _encode_varbind("1.3.6.1.6.3.18.1.3.0", "192.0.2.147", "ipaddress")
+        self.assertTrue(varbind.endswith(b"\x40\x04\xc0\x00\x02\x93"))
+
+    def test_ipaddress_varbind_rejects_invalid(self):
+        for bad in ("256.1.1.1", "1.2.3", "::1", "host", ""):
+            with self.subTest(value=bad):
+                with self.assertRaises(ValueError):
+                    _encode_varbind(SNMP_TRAP_ADDRESS_OID, bad, "ipaddress")
+
+    def test_claim_is_exactly_one_extra_varbind(self):
+        trap_oid = "1.3.6.1.4.1.19041.2.1.103.0.90"
+        base = [("1.3.6.1.4.1.19041.2.1.5.10.1", "abc", "string")]
+        claim = (SNMP_TRAP_ADDRESS_OID, "192.0.2.147", "ipaddress")
+        without = build_snmpv2_trap("public", 0, trap_oid, base)
+        with_claim = build_snmpv2_trap("public", 0, trap_oid, base + [claim])
+        encoded = _encode_varbind(*claim)
+        self.assertTrue(with_claim.endswith(encoded))
+        # Both messages stay in short-form BER lengths, so no length-field growth.
+        self.assertLess(with_claim[1], 0x80)
+        self.assertEqual(len(with_claim) - len(without), len(encoded))
 
 
 class TestSendTrap(unittest.TestCase):

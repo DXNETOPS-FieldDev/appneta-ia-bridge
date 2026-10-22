@@ -8,7 +8,7 @@ there when AppNeta clears them.
 It is a small Python service with no third-party dependencies, packaged with an nginx TLS front end
 in a single Docker image. Companion install bundles configure the Spectrum and Smarts side.
 
-- **Version:** 0.1.2
+- **Version:** 0.1.3
 - **Install:** [`INSTALLATION.md`](INSTALLATION.md)
 - **Changes:** [`CHANGELOG.md`](CHANGELOG.md)
 
@@ -51,6 +51,7 @@ required.
 | `TRAP_DESTINATION_<N>_PORT` | no | `162` | UDP port of destination `N`. |
 | `TRAP_DESTINATION_<N>_COMMUNITY` | no | `public` | SNMP community string; must match the receiver. |
 | `TRAP_DESTINATION_<N>_SCHEME` | yes | — | `vna` or `general`. Must match the mode installed on destination `N` (`intelligent_alarms.sh status`). Smarts always uses `general`. The container refuses to start if it is unset or invalid. |
+| `TRAP_DESTINATION_<N>_SOURCE_ADDRESS` | yes | — | Dotted IPv4 address sent in every trap to destination `N` as `snmpTrapAddress.0` (OID `1.3.6.1.6.3.18.1.3.0`), telling the receiver which device the trap is about when NAT or a container hides the real sender address. For Spectrum use the IP address of the AppNeta model; for Smarts, the element's IP address. `none` (any case) sends no claim, as in v0.1.1 and v0.1.2. Do not use the IP address of another real device: its alarms would be routed to that device. The container refuses to start if it is unset or invalid. |
 | `AUTH_TYPE` | yes | — | `NONE`, `BASIC` or `BEARER`. Must match the authentication configured on the AppNeta connector. |
 | `AUTH_TOKEN` / `AUTH_TOKEN_FILE` | `AUTH_TYPE=BEARER` | — | Bearer token, or the path of a file containing it. |
 | `AUTH_USERNAME` | `AUTH_TYPE=BASIC` | — | Basic-auth user name. |
@@ -66,8 +67,9 @@ sends the v3 equivalent (`v3_id = v4_id - offset`) alongside each 64-bit ID. `ge
 need neither.
 
 The bridge's command line also accepts a repeatable
-`--trap-destination HOST:PORT:COMMUNITY[:SCHEME]` flag. When any is given, they replace the
-`TRAP_DESTINATION_*` environment variables entirely.
+`--trap-destination HOST:PORT:COMMUNITY[:SCHEME[:SOURCE_ADDRESS]]` flag. When any is given, they replace the
+`TRAP_DESTINATION_*` environment variables entirely. Leaving out the fifth field sends no claim
+(the same as `none`).
 
 Prefer `AUTH_TYPE=BEARER` with a long random token. `AUTH_TYPE=NONE` lets anyone who can reach the
 endpoint send alarms to your trap receiver, including clearing real ones.

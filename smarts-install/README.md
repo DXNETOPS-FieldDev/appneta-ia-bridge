@@ -69,5 +69,6 @@ dmctl -s INCHARGE-OI invoke ICS_Notification::NOTIFICATION-SNMPTrapIndication_<i
 
 ## Bridge side
 
-Add a `TRAP_DESTINATION_<N>_*` set to the bridge with `_SCHEME=general` for this host. See
-[`README.md`](../README.md#configuration).
+Add a `TRAP_DESTINATION_<N>_*` set to the bridge with `_SCHEME=general` for this host. Set
+`TRAP_DESTINATION_<N>_SOURCE_ADDRESS` to the IP address of the host element in Smarts that the
+alarms should attach to. See [`README.md`](../README.md#configuration).

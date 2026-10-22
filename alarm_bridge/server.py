@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from alarm_bridge import mapping
 from alarm_bridge.auth import AuthError, validate_auth
+from alarm_bridge.snmp_trap import SNMP_TRAP_ADDRESS_OID
 
 logger = logging.getLogger("alarm_bridge")
 
@@ -77,8 +78,16 @@ def make_handler(config, trap_sender):
                 if mapped is None:
                     continue
                 trap_oid, varbinds = mapped
+                # New list per destination: the cached varbinds are shared by
+                # every destination on this scheme and must not be mutated.
+                if dest.source_address:
+                    send_varbinds = varbinds + [
+                        (SNMP_TRAP_ADDRESS_OID, dest.source_address, "ipaddress")
+                    ]
+                else:
+                    send_varbinds = varbinds
                 try:
-                    trap_sender(dest.host, dest.port, dest.community, trap_oid, varbinds)
+                    trap_sender(dest.host, dest.port, dest.community, trap_oid, send_varbinds)
                     sent = True
                 except Exception:
                     logger.warning(

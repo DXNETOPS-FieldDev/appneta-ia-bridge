@@ -114,9 +114,10 @@ you run it as another account.
    `AppNetaAdmin`, then fill in:
    - **Name:** shown on every alarm from this integration, for example `AppNeta Intelligent
      Alarms`. Add a suffix such as ` - <site>` if you run several bridges.
-   - **Monitoring Point IP Address:** the address the bridge sends traps *from*, not Spectrum's own
-     address and not a NAT address in front of the bridge. Confirm it with a packet capture if you
-     are unsure.
+   - **Monitoring Point IP Address:** the address the bridge's traps are attributed to, not
+     Spectrum's own address. With the v0.1.3 sender-identity claim, the bridge no longer needs to be
+     the real sender of this address: set `TRAP_DESTINATION_<N>_SOURCE_ADDRESS` to this same IP.
+     Do not use the IP of another real device already modeled in Spectrum.
    - **Security String:** leave blank.
 
    Then enable IP-header trap mapping, which is off by default and without which traps are not

@@ -16,6 +16,7 @@ class TestMain(unittest.TestCase):
         env = {
             "TRAP_DESTINATION_1_HOST": "spectrum.example.com",
             "TRAP_DESTINATION_1_SCHEME": "general",
+            "TRAP_DESTINATION_1_SOURCE_ADDRESS": "none",
             "AUTH_TYPE": "NONE",
         }
         with mock.patch.dict("os.environ", env, clear=True):
@@ -65,6 +66,46 @@ class TestMain(unittest.TestCase):
                 main(["--trap-destination", "spectrum:162:public"])
         called_config = run_server.call_args[0][0]
         self.assertEqual(called_config.trap_destinations[0].scheme, "vna")
+
+    def _run_flag(self, value):
+        env = {"AUTH_TYPE": "NONE", "APPNETA_V3_ID_OFFSET": "42"}
+        with mock.patch.dict("os.environ", env, clear=True):
+            with mock.patch("alarm_bridge.cli.run_server") as run_server:
+                main(["--trap-destination", value])
+        return run_server.call_args[0][0].trap_destinations[0]
+
+    def test_five_field_destination_sets_source_address(self):
+        dest = self._run_flag("h:162:c:general:192.0.2.3")
+        self.assertEqual(dest.source_address, "192.0.2.3")
+        self.assertEqual(dest.scheme, "general")
+
+    def test_four_field_destination_has_no_claim(self):
+        self.assertEqual(self._run_flag("h:162:c:general").source_address, "")
+
+    def test_none_source_address_is_opt_out(self):
+        dest = self._run_flag("h:162:c:general:none")
+        self.assertEqual(dest.source_address, "")
+        self.assertEqual(dest.scheme, "general")
+
+    def test_bogus_scheme_with_source_address_is_argparse_error(self):
+        with mock.patch("alarm_bridge.cli.run_server") as run_server:
+            with mock.patch("sys.stderr") as err:
+                with self.assertRaises(SystemExit) as ctx:
+                    main(["--trap-destination", "h:162:c:bogus:192.0.2.3"])
+        self.assertEqual(ctx.exception.code, 2)
+        self.assertIn("scheme", "".join(c.args[0] for c in err.write.call_args_list))
+        run_server.assert_not_called()
+
+    def test_invalid_source_address_is_argparse_error(self):
+        with mock.patch("alarm_bridge.cli.run_server") as run_server:
+            with mock.patch("sys.stderr") as err:
+                with self.assertRaises(SystemExit) as ctx:
+                    main(["--trap-destination", "h:162:c:general:999.1.1.1"])
+        self.assertEqual(ctx.exception.code, 2)
+        stderr = "".join(c.args[0] for c in err.write.call_args_list)
+        self.assertIn("invalid SOURCE_ADDRESS", stderr)
+        self.assertIn("999.1.1.1", stderr)
+        run_server.assert_not_called()
 
 
 if __name__ == "__main__":

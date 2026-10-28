@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.2
+
+Troubleshooting additions to the installation guide.
+
+- `INSTALLATION.md` step 7: `tcpdump` commands for the Docker host and the receiver, how to read the
+  result, and `ss` and `nc` checks for the trap listener. Documentation only; no behavior change.
+
 ## v0.2.1
 
 Organization id OID fix, MIB lint cleanup and a reworked installation guide.

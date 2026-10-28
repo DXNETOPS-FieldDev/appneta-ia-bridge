@@ -35,7 +35,7 @@ that carry an `AppNetaPathIdentifier` attribute (`0x673009f`), or ask your Spect
 ```bash
 git clone https://github.com/DXNETOPS-FieldDev/appneta-ia-bridge.git appneta-ia-bridge
 cd appneta-ia-bridge
-git checkout v0.2.1
+git checkout v0.2.2
 docker build -t appneta-ia-bridge .
 ```
 
@@ -408,8 +408,17 @@ Notes:
    (see `docker logs appneta-ia-bridge`); `502` means the bridge could not send the trap to any
    destination (check the destination host, port and network). With a verifying client and a
    public certificate this also proves the certificate and name are correct.
-2. **The trap arrives.** On the receiver, capture `udp port 162` (or your configured port) while
-   you repeat the request.
+2. **The trap arrives.** Capture the trap's UDP port (162 unless you set another) while you repeat
+   the request, on the Docker host and on the receiver:
+   ```bash
+   sudo tcpdump -ni any udp port 162
+   ```
+   Seen on the Docker host but not on the receiver: the network or a firewall is dropping it. Seen on
+   both but no alarm: the receiver's configuration (step 5). If the capture on the Docker host is
+   followed by `ICMP ... udp port 162 unreachable`, the receiver host is up but nothing is listening
+   on that port. On the receiver, `ss -ulnp | grep ':162 '` lists the listener; from the Docker host,
+   `nc -zvu -w2 <receiver> 162` reports a closed port (it cannot confirm an open one, because UDP has
+   no handshake).
 3. **The alarm appears.** In Spectrum, confirm an alarm whose title starts with `AppNeta
    Intelligent Alarm` and names the rule `Install verification` (`general`); Smarts: `dmctl -s INCHARGE-OI getInstances
    ICS_Notification`.

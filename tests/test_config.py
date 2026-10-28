@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from alarm_bridge.config import Config, ConfigError, TrapDestination, load_config
+from alarm_bridge.config import ConfigError, TrapDestination, load_config
 
 
 class TestLoadConfig(unittest.TestCase):

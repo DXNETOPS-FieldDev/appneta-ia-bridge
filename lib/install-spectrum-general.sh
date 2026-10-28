@@ -14,6 +14,7 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_DIR="$(cd "$LIB_DIR/../spectrum-install-general" && pwd)"
 source "$LIB_DIR/_write_state_marker.sh"
 source "$LIB_DIR/_install_helpers.sh"
+source "$LIB_DIR/_compile_mibs.sh"
 
 for dir in "$VENDOR_DIR" "$PCAUSE_DIR" "$EVFORMAT_DIR"; do
     if [ ! -d "$dir" ]; then
@@ -42,6 +43,7 @@ EVENTDISP_SHA="$(sha256sum < "$SCRIPT_DIR/EventDisp.appneta-ia-general.fragment"
 write_state_marker "general" "$VENDOR_DIR/.intelligent-alarms-state" "1.0" \
     "$ALERTMAP_LINES_ADDED" "$ALERTMAP_SHA" "$EVENTDISP_LINES_ADDED" "$EVENTDISP_SHA"
 
-echo "Copy $SCRIPT_DIR/../mibs/APPNETA-INTELLIGENT-ALARM-MIB.mib into your MIB compiler"
-echo "(the same MIB file vna mode uses -- it now defines general's notifications too),"
-echo "then restart SpectroSERVER for the new AlertMap/EventDisp entries to take effect."
+compile_mibs "$SCRIPT_DIR/../mibs" || exit 1
+finish_state_marker "$VENDOR_DIR/.intelligent-alarms-state" || exit 1
+
+echo "Restart SpectroSERVER for the new AlertMap/EventDisp entries to take effect."

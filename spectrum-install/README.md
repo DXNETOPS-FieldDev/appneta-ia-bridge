@@ -29,6 +29,24 @@ Uninstall uses the state record to remove exactly this, and refuses to change an
 uninstalls the current one. The installer never touches the MIB database and never restarts
 anything; those steps are below.
 
+## Split install: SpectroSERVER and OneClick on separate hosts
+
+Run the installer on both hosts, with the same mode. Each host gets only what it uses:
+
+| Host | Command | Installs |
+|---|---|---|
+| SpectroSERVER | `./intelligent_alarms.sh --spectroserver --<mode> install` | Everything in the table above |
+| OneClick web server | `./intelligent_alarms.sh --oneclick --<mode> install` | `SG-Support/CsPCause/Prob*_en_US` and `SG-Support/CsEvFormat/Event*_en_US` only, plus `SG-Support/.intelligent-alarms-oneclick-state` |
+
+OneClick formats alarm and event text from its own host's `SG-Support`, live. If these files are
+missing there, the alarm's probable-cause page says `file Prob... was not found on this server` and
+the event log says `...for which no event format file exists`. The logic files (`AlertMap`,
+`EventDisp`, severity map, path-model rules) are read by SpectroSERVER only. The MIB compile happens
+on the OneClick host, run by `--oneclick install` itself. Create the `AppNetaAdmin` model and restart SpectroSERVER as in the steps below.
+`--oneclick status` and `--oneclick uninstall` work the same way as on a single
+host. Run the plain `--spectroserver` command on a OneClick-only host and it stops with a pointer to
+`--oneclick`.
+
 ## Prerequisites
 
 Do all of this as the account that owns the Spectrum installation (the owner of its `SS`
@@ -84,10 +102,12 @@ you run it as another account.
 2. **Install**, in the owner-account shell from the prerequisites:
    ```bash
    cd /tmp/appneta-ia-bridge-install
-   ./intelligent_alarms.sh --spectrum --general install     # or: --spectrum --vna install
-   ./intelligent_alarms.sh --spectrum status                # "Spectrum: general installed"
+   ./intelligent_alarms.sh --spectroserver --general install     # or: --spectroserver --vna install
+   ./intelligent_alarms.sh --spectroserver status                # "Spectrum: general installed"
    ```
-3. **Compile the MIBs.** `APPNETA-INTELLIGENT-ALARM-MIB.mib` imports `APPNETA-MIB`, and the
+3. **Compile the MIBs.** The installer in step 2 already did this; it exits `1` if a MIB fails to
+   compile and skips the compile on a host with no `MibDatabase`. To compile by hand:
+   `APPNETA-INTELLIGENT-ALARM-MIB.mib` imports `APPNETA-MIB`, and the
    compiler looks for that module as a file next to it, so copy both (a copy of `APPNETA-MIB.mib`
    is included in `mibs/`; use your own newer copy in its place if you have one):
    ```bash
@@ -95,7 +115,8 @@ you run it as another account.
    cp /tmp/appneta-ia-bridge-install/mibs/*.mib /tmp/mib-compile/
    bash "$SPECTRUM_HOME/MibDatabase/scripts/BulkMibCompile.sh" -d /tmp/mib-compile -f "*.mib"
    ```
-   Both files must compile with no `MIB failed to compile` line.
+   Both files must compile with no `MIB failed to compile` line. The tool's exit code is `0` even on
+   failure, so check the output.
 4. **Restart SpectroSERVER.** The new files are read only at start.
    ```bash
    (cd "$SPECTRUM_HOME/bin" && ./stopSS.pl)
@@ -181,7 +202,7 @@ Use the lightest level that fixes the problem.
 
 **Level 1: remove the files (one SpectroSERVER restart).**
 ```bash
-/tmp/appneta-ia-bridge-install/intelligent_alarms.sh --spectrum uninstall
+/tmp/appneta-ia-bridge-install/intelligent_alarms.sh --spectroserver uninstall
 ```
 The dispatcher removes exactly what it installed. If it refuses because `AlertMap` or `EventDisp`
 were edited, or the state record is missing, restore manually:

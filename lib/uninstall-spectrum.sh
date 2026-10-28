@@ -21,15 +21,17 @@ if [ ! -f "$MARKER" ]; then
     exit 0
 fi
 
-# shellcheck disable=SC1090
-mode="$(grep '^mode=' "$MARKER" | cut -d= -f2)"
+# A grep with no match must not abort the script under pipefail (that would skip the "malformed" error
+# below and exit 1 in silence), hence the `|| true`.
+marker_field() { { grep "^$1=" "$MARKER" || true; } | cut -d= -f2; }
+mode="$(marker_field mode)"
 # wc -l left-pads its output with whitespace (e.g. "    1782"), and that padding is
 # preserved verbatim when the install scripts write these fields into the marker --
 # strip it here so it can't break tail's argument parsing or a numeric comparison.
-alertmap_lines="$(grep '^alertmap_lines_appended=' "$MARKER" | cut -d= -f2 | tr -d '[:space:]')"
-alertmap_sha="$(grep '^alertmap_sha256=' "$MARKER" | cut -d= -f2)"
-eventdisp_lines="$(grep '^eventdisp_lines_appended=' "$MARKER" | cut -d= -f2 | tr -d '[:space:]')"
-eventdisp_sha="$(grep '^eventdisp_sha256=' "$MARKER" | cut -d= -f2)"
+alertmap_lines="$(marker_field alertmap_lines_appended | tr -d '[:space:]')"
+alertmap_sha="$(marker_field alertmap_sha256)"
+eventdisp_lines="$(marker_field eventdisp_lines_appended | tr -d '[:space:]')"
+eventdisp_sha="$(marker_field eventdisp_sha256)"
 
 if [ -z "$mode" ] || [ -z "$alertmap_lines" ] || [ -z "$eventdisp_lines" ]; then
     echo "ERROR: state marker at $MARKER is malformed (missing required fields)." >&2
@@ -37,7 +39,9 @@ if [ -z "$mode" ] || [ -z "$alertmap_lines" ] || [ -z "$eventdisp_lines" ]; then
     exit 1
 fi
 
-verify_and_truncate() {
+# Check both files BEFORE changing either: a mismatch in the second must not leave the first
+# already stripped (the re-run would then fail its own check and need manual repair).
+verify_block() {
     local target="$1" expected_lines="$2" expected_sha="$3" label="$4"
     local actual_sha
     actual_sha="$(tail -n "$expected_lines" "$target" | sha256sum | cut -d' ' -f1)"
@@ -45,25 +49,37 @@ verify_and_truncate() {
         echo "ERROR: $label's last $expected_lines lines don't match what was installed" >&2
         echo "(expected sha256 $expected_sha, got $actual_sha)." >&2
         echo "Something was appended after install or the file was hand-edited." >&2
-        echo "Refusing to truncate -- manual reconciliation required." >&2
+        echo "Refusing to truncate -- manual reconciliation required. Nothing was changed." >&2
         exit 1
     fi
+}
+
+remove_block() {
+    local target="$1" expected_lines="$2" label="$3"
     # `head -n -N` (GNU-only "all but the last N lines") isn't portable -- BSD/macOS
     # head rejects the negative count. Compute the positive keep-count instead so
     # this works on both.
-    local total_lines keep_lines
+    local total_lines keep_lines tmp
     total_lines="$(wc -l < "$target" | tr -d '[:space:]')"
     keep_lines=$((total_lines - expected_lines))
     if [ "$keep_lines" -le 0 ]; then
         : > "$target"
     else
-        head -n "$keep_lines" "$target" > "${target}.tmp" && mv "${target}.tmp" "$target"
+        # Write the kept lines aside, then copy them back over the file (not mv): the original
+        # keeps its owner, mode and inode, and a failed head/cat stops the uninstall instead of
+        # being reported as removed.
+        tmp="$(mktemp)" || { echo "ERROR: cannot create a temp file to edit $label" >&2; exit 1; }
+        head -n "$keep_lines" "$target" > "$tmp" || { rm -f "$tmp"; echo "ERROR: could not rewrite $label" >&2; exit 1; }
+        cat "$tmp" > "$target" || { rm -f "$tmp"; echo "ERROR: could not rewrite $label -- it may be damaged" >&2; exit 1; }
+        rm -f "$tmp"
     fi
     echo "Removed $label's $mode-mode content ($expected_lines lines)."
 }
 
-verify_and_truncate "$VENDOR_DIR/AlertMap" "$alertmap_lines" "$alertmap_sha" "AlertMap"
-verify_and_truncate "$VENDOR_DIR/EventDisp" "$eventdisp_lines" "$eventdisp_sha" "EventDisp"
+verify_block "$VENDOR_DIR/AlertMap" "$alertmap_lines" "$alertmap_sha" "AlertMap"
+verify_block "$VENDOR_DIR/EventDisp" "$eventdisp_lines" "$eventdisp_sha" "EventDisp"
+remove_block "$VENDOR_DIR/AlertMap" "$alertmap_lines" "AlertMap"
+remove_block "$VENDOR_DIR/EventDisp" "$eventdisp_lines" "EventDisp"
 
 if [ "$mode" = "vna" ]; then
     # Model-type-scoped EventDisp for NetworkPath/WebPath -- whole small files we own
@@ -83,7 +99,7 @@ if [ "$mode" = "vna" ]; then
 elif [ "$mode" = "general" ]; then
     rm -f "$PCAUSE_DIR/Prob06732174_en_US" "$PCAUSE_DIR/Prob06732176_en_US"
     # Raised (even) and cleared (odd) tiers.
-    rm -f "$EVFORMAT_DIR"/Event0673217{4,5,6,7,8,a}_en_US
+    rm -f "$EVFORMAT_DIR"/Event0673217{4,5,6,7,8,9,a,b}_en_US
 else
     echo "ERROR: unknown mode '$mode' in state marker -- refusing to remove text files blindly." >&2
     exit 1

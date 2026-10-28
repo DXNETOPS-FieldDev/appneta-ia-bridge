@@ -205,6 +205,27 @@ class TestServer(unittest.TestCase):
         self.thread.join(timeout=2)
         self._start(self._claim_config(destinations), self.fake_sender)
 
+    def test_every_send_failing_returns_502_so_the_sender_retries(self):
+        def down(host, port, community, trap_oid, varbinds):
+            raise OSError("network unreachable")
+
+        self.httpd.shutdown()
+        self.thread.join(timeout=2)
+        self._start(self._claim_config([
+            TrapDestination("a", 162, "public", "general"),
+            TrapDestination("b", 162, "public", "general"),
+        ]), down)
+        self.assertEqual(self._post(self._raised()), 502)
+
+    def test_unmappable_payload_is_400_even_when_the_network_is_down(self):
+        def down(host, port, community, trap_oid, varbinds):
+            raise OSError("network unreachable")
+
+        self.httpd.shutdown()
+        self.thread.join(timeout=2)
+        self._start(self._claim_config([TrapDestination("a", 162, "public", "general")]), down)
+        self.assertEqual(self._post(json.dumps({"state": "WEIRD"}).encode()), 400)
+
     def test_claim_is_last_varbind_with_ipaddress_type(self):
         self._restart([TrapDestination("127.0.0.1", 162, "public", "vna", "192.0.2.147")])
         self.assertEqual(self._post(self._raised()), 200)

@@ -60,6 +60,7 @@ def make_handler(config, trap_sender):
 
             trap_by_scheme = {}
             sent = False
+            attempted = False
             for dest in config.trap_destinations:
                 if dest.scheme not in trap_by_scheme:
                     try:
@@ -86,6 +87,7 @@ def make_handler(config, trap_sender):
                     ]
                 else:
                     send_varbinds = varbinds
+                attempted = True
                 try:
                     trap_sender(dest.host, dest.port, dest.community, trap_oid, send_varbinds)
                     sent = True
@@ -95,7 +97,9 @@ def make_handler(config, trap_sender):
                     )
 
             if not sent:
-                self.send_response(400)
+                # 400: nothing was mappable, so the payload is bad and a retry won't help.
+                # 502: we tried and every send failed; that is on our side, so let the sender retry.
+                self.send_response(502 if attempted else 400)
                 self.end_headers()
                 return
 

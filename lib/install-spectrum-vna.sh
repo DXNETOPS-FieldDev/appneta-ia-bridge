@@ -15,6 +15,7 @@ PCAUSE_DIR="$SPECTRUM_HOME/SG-Support/CsPCause"
 EVFORMAT_DIR="$SPECTRUM_HOME/SG-Support/CsEvFormat"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../spectrum-install" && pwd)"
 source "$(dirname "${BASH_SOURCE[0]}")/_install_helpers.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/_compile_mibs.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/_write_state_marker.sh"
 
 for dir in "$VENDOR_DIR" "$PCAUSE_DIR" "$EVFORMAT_DIR"; do
@@ -75,7 +76,8 @@ echo "Installing severity map to $SEVERITYMAP_DIR"
 mkdir -p "$SEVERITYMAP_DIR"
 install_file "$SCRIPT_DIR/SeverityMaps.IntelligentAlarmSeverity" "$SEVERITYMAP_DIR/IntelligentAlarmSeverity"
 
-echo "Copy $SCRIPT_DIR/../mibs/APPNETA-INTELLIGENT-ALARM-MIB.mib into your MIB compiler"
-echo "and load it via OneClick Administration (or the mibtoolsutil CLI), then restart"
-echo "SpectroSERVER for the new AlertMap/EventDisp/SeverityMap entries to take"
+compile_mibs "$SCRIPT_DIR/../mibs" || exit 1
+finish_state_marker "$VENDOR_DIR/.intelligent-alarms-state" || exit 1
+
+echo "Restart SpectroSERVER for the new AlertMap/EventDisp/SeverityMap entries to take"
 echo "effect. See spectrum-install/README.md for details."

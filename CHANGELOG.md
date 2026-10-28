@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.2.0
+
+Split Spectrum installs, MIB compile and install logging.
+
+- **CLI change:** `intelligent_alarms.sh --spectrum` is replaced by `--spectroserver` (the single-host
+  install, or the SpectroSERVER host of a split install). `--spectrum` now exits with an error naming the
+  new flags. `--smarts` and `status` are unchanged.
+- Split Spectrum installs (SpectroSERVER and OneClick on separate hosts): new
+  `intelligent_alarms.sh --oneclick [--vna|--general] install|uninstall|status` for the
+  OneClick host, which installs only the alarm text files OneClick reads from its own host. See
+  `INSTALLATION.md`.
+- The Spectrum installers now compile the MIBs themselves (both `.mib` files, via `BulkMibCompile.sh`)
+  and exit `1` if a MIB fails to compile. The compile is skipped on a host with no `MibDatabase`.
+- `intelligent_alarms.sh install` and `uninstall` now write `logs/<yyyymmddhhmm>-install.log` or `-uninstall.log` (created if missing;
+  `IA_LOG_DIR` overrides the location) with the command, user, host, all output and the exit status.
+- Uninstall is safer: both `AlertMap` and `EventDisp` are checked before either is changed, the files keep
+  their owner and mode, a damaged state marker produces an error instead of a silent exit 1, and `status`
+  reports an unreadable marker instead of "not installed". Bare `status` also shows a OneClick-host install.
+- The bridge now answers `502` (was `400`) when it tried to send a trap and every destination failed, so a
+  webhook sender that retries on 5xx retries a transient network error. A payload that is rejected still
+  returns `400`.
+- `status` reports "INCOMPLETE install" when an install stopped before finishing (for example a MIB compile
+  failure), until `install` is re-run successfully.
+- `--spectroserver install` prints a reminder to run `--oneclick install` on the OneClick host when this host has no
+  OneClick (`tomcat/`).
+- `--oneclick` is refused on a host that has a SpectroSERVER (`SS/`); use `--spectroserver` there.
+- Fixed `--spectroserver --general uninstall` leaving `Event06732179_en_US` and `Event0673217b_en_US`
+  behind.
+
 ## v0.1.3
 
 Sender identity in traps.

@@ -1,0 +1,5 @@
+# DS-0002: the image has no USER because the entrypoint must start as root. nginx's master binds :443
+# and docker/entrypoint.sh reads root-owned secret files before dropping alarm_bridge to appuser
+# (python, uid 1000) and nginx's workers to www-data. Revisit if the container is ever moved to an
+# unprivileged listen port.
+DS-0002

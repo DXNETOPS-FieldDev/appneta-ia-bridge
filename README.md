@@ -8,7 +8,7 @@ there when AppNeta clears them.
 It is a small Python service with no third-party dependencies, packaged with an nginx TLS front end
 in a single Docker image. Companion install bundles configure the Spectrum and Smarts side.
 
-- **Version:** 0.1.3
+- **Version:** 0.2.0
 - **Install:** [`INSTALLATION.md`](INSTALLATION.md)
 - **Changes:** [`CHANGELOG.md`](CHANGELOG.md)
 
@@ -107,7 +107,7 @@ Python in `alarm_bridge/`.
 | Transport | TLS 1.2 and 1.3 terminated by nginx; certificate and key are supplied by you and never baked into the image. | `docker/nginx-tls.conf` |
 | Authentication | `NONE`, `BASIC` or `BEARER`, chosen explicitly (no default). Credentials are compared in constant time. The request body is not read until authentication succeeds. | `alarm_bridge/auth.py`, `alarm_bridge/server.py` |
 | Request limits | Bodies over 1 MB are rejected (`413`); a missing, negative or non-numeric `Content-Length` is rejected (`400`); each connection has a 15 s timeout. nginx enforces the same 1 MB cap. | `alarm_bridge/server.py`, `docker/nginx-*.conf` |
-| Input validation | The payload must be a JSON object; severity, state, `orgId` and `ruleId` are validated; invalid input returns `400` and never reaches the trap sender. | `alarm_bridge/mapping.py` |
+| Input validation | The payload must be a JSON object; severity, state, `orgId` and `ruleId` are validated; invalid input returns `400` and never reaches the trap sender. If every trap send fails the bridge returns `502`. | `alarm_bridge/mapping.py` |
 | Secrets | `AUTH_TOKEN_FILE` / `AUTH_PASSWORD_FILE` keep secrets out of `docker inspect` and shell history. The bridge does not log credentials. | `docker/entrypoint.sh`, `alarm_bridge/config.py` |
 | Privileges | The entrypoint runs as root only to read secret files and let nginx bind `:443`; `alarm_bridge` runs as the unprivileged `appuser`. | `Dockerfile`, `docker/entrypoint.sh` |
 | Outbound traffic | Only SNMP v2c traps over UDP to the configured destinations. The bridge makes no other outbound connections and has no third-party dependencies. | `alarm_bridge/snmp_trap.py` |

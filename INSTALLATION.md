@@ -35,7 +35,7 @@ that carry an `AppNetaPathIdentifier` attribute (`0x673009f`), or ask your Spect
 ```bash
 git clone https://github.com/DXNETOPS-FieldDev/appneta-ia-bridge.git appneta-ia-bridge
 cd appneta-ia-bridge
-git checkout v0.1.3
+git checkout v0.2.0
 docker build -t appneta-ia-bridge .
 ```
 
@@ -148,12 +148,18 @@ Full prerequisites, backups, and rollback are in
    ```bash
    sudo -u spectrum -i
    cd /tmp/appneta-ia-bridge-install
-   ./intelligent_alarms.sh --spectrum --general install      # or --vna
-   ./intelligent_alarms.sh --spectrum status                 # "Spectrum: general installed"
+   ./intelligent_alarms.sh --spectroserver --general install      # or --vna
+   ./intelligent_alarms.sh --spectroserver status                 # "Spectrum: general installed"
    ```
    The installer prints `Using SPECTRUM_HOME=...`; confirm that it is your installation. If your
    `spectrum80.env` is not in `/opt/SPECTRUM`, set `SPECTRUM_ENV_FILE` first.
-3. Compile the MIBs (both files must be in the same directory):
+   Every `install` and `uninstall` also writes a log, `logs/<yyyymmddhhmm>-install.log` (or `-uninstall.log`) next to
+   `intelligent_alarms.sh` (the directory is created if missing; set `IA_LOG_DIR` to put it elsewhere).
+   It holds the command, user, host, everything the installers printed, and the exit status. `status`
+   writes no log.
+3. The installer in step 2 compiles the MIBs for you (it exits `1` if a MIB fails to compile, and skips
+   the compile on a host with no `MibDatabase`). To compile by hand instead, both files must be in
+   the same directory:
    ```bash
    export SPECTRUM_HOME=<the directory printed above>
    mkdir -p /tmp/mib-compile
@@ -177,6 +183,49 @@ Full prerequisites, backups, and rollback are in
    [`spectrum-install/README.md`](spectrum-install/README.md#step-by-step-install).
 
 Make sure `TRAP_DESTINATION_<N>_SCHEME` in step 4 matches the mode you installed.
+
+### Spectrum with SpectroSERVER and OneClick on separate hosts
+
+Which command goes where depends on how Spectrum is laid out:
+
+| Layout | Run |
+|---|---|
+| One host runs both SpectroSERVER and OneClick | `--spectroserver` only (steps 1 to 5 above). It installs everything, including the alarm text files OneClick reads. |
+| SpectroSERVER on one host, OneClick on another | `--spectroserver` on the SpectroSERVER host **and** `--oneclick` on the OneClick host, with the same mode (`general` or `vna`) on each. |
+
+Not sure which you have? A host with a `tomcat/` directory under its Spectrum directory runs OneClick.
+After a successful `--spectroserver install` on a host without one, the installer prints a reminder to run
+`--oneclick` on the OneClick host. It cannot see that host, so it only reminds you; it does not check.
+
+For a split install, copy the bundle to both hosts (step 1), then:
+
+- **SpectroSERVER host:** steps 2, 4 and 5 as above (the `AppNetaAdmin` model lives on the
+  SpectroSERVER).
+- **OneClick host:** become the account that owns the Spectrum installation and run
+  ```bash
+  cd /tmp/appneta-ia-bridge-install
+  ./intelligent_alarms.sh --oneclick --general install     # or --vna, matching the other host
+  ./intelligent_alarms.sh --oneclick status                # "Spectrum OneClick host: general installed"
+  ```
+  This installs only the alarm text files (`SG-Support/CsPCause/Prob*_en_US` and
+  `SG-Support/CsEvFormat/Event*_en_US`). OneClick reads them from its own host, live, so nothing
+  restarts. Without them the console shows `file Prob... was not found on this server` and events
+  read `...for which no event format file exists`. `--oneclick install` also runs the MIB compile, because
+  the MIB compiler belongs to the OneClick server.
+
+  `--oneclick install` is refused on a host that has a SpectroSERVER (an `SS/` directory): that host gets
+  these files from `--spectroserver`, and `--oneclick` there would duplicate them. Use `--spectroserver` on it.
+
+Run `status` on each host when you finish. If an install stopped before the end (for example a MIB
+compile failure), `status` says `INCOMPLETE install`: fix the error and run `install` again.
+
+To switch modes or remove the integration, run the same command on each host (`--oneclick uninstall`
+on the OneClick host).
+
+If OneClick reports `No SpectroSERVER is available`, add the OneClick host's name to
+`$SPECROOT/.hostrc` on the SpectroSERVER host, and make sure the OneClick host's own `.hostrc` names the
+SpectroSERVER host; then restart Tomcat on the OneClick host. That is Spectrum's own setup for a separate
+OneClick host, not something this bundle changes.
 
 ### Smarts
 
@@ -254,8 +303,9 @@ Notes:
      -H "Authorization: Bearer $(sudo cat /etc/appneta-ia-bridge/secrets/auth_token)" \
      -d '{"state":"RAISED","alarmId":"install-verify-1","orgId":"1","ruleId":"1","alarmSeverity":"MAJOR","rule":"Install verification"}'
    ```
-   Expect `HTTP/1.1 200`. `401` means the token is wrong; `400` means the payload or the trap
-   destinations are invalid (see `docker logs appneta-ia-bridge`). With a verifying client and a
+   Expect `HTTP/1.1 200`. `401` means the token is wrong; `400` means the payload was rejected
+   (see `docker logs appneta-ia-bridge`); `502` means the bridge could not send the trap to any
+   destination (check the destination host, port and network). With a verifying client and a
    public certificate this also proves the certificate and name are correct.
 2. **The trap arrives.** On the receiver, capture `udp port 162` (or your configured port) while
    you repeat the request.
@@ -278,12 +328,12 @@ Notes:
 - **Change settings:** `docker rm -f appneta-ia-bridge`, then repeat step 4 with the new values.
 - **Upgrade:** `git fetch --tags && git checkout <new tag>`, rebuild the image (step 1), recreate
   the container (step 4). If [`CHANGELOG.md`](CHANGELOG.md) lists destination-side changes, run
-  `./intelligent_alarms.sh --spectrum uninstall` (or `--smarts`) and install again from the new
+  `./intelligent_alarms.sh --spectroserver uninstall` (or `--smarts`) and install again from the new
   version.
 - **Rotate the token:** write a new value to the token file, update the AppNeta connector, and
   `docker restart appneta-ia-bridge`.
 - **Uninstall:** `docker rm -f appneta-ia-bridge`; on the destination servers run
-  `./intelligent_alarms.sh --spectrum uninstall` or `--smarts uninstall` and restart SpectroSERVER
+  `./intelligent_alarms.sh --spectroserver uninstall` or `--smarts uninstall` and restart SpectroSERVER
   (Spectrum). The Spectrum rollback levels are in
   [`spectrum-install/README.md`](spectrum-install/README.md#backout-plan).
 

@@ -131,11 +131,17 @@ class TestMapAlarmToTrap(unittest.TestCase):
         as_dict = {oid: (value, vtype) for oid, value, vtype in varbinds}
         self.assertEqual(as_dict[OID["tags"]], ("", "string"))
 
-    def test_all_varbind_oids_are_under_apn_alarm_base(self):
+    def test_all_varbind_oids_are_under_apn_alarm_base_except_org_id(self):
+        # orgId is APPNETA-MIB::orgId, shared with native AppNeta traps.
         payload = load_fixture("alarm_raised.json")
         _, varbinds = map_alarm_to_trap(payload)
         for oid, _, _ in varbinds:
+            if oid == "1.3.6.1.4.1.19041.2.1.5.1.5":
+                continue
             self.assertTrue(oid.startswith("1.3.6.1.4.1.19041.2.1.5.10."))
+
+    def test_org_id_uses_appneta_mib_oid(self):
+        self.assertEqual(OID["orgId"], "1.3.6.1.4.1.19041.2.1.5.1.5")
 
     def test_produces_exactly_twenty_one_varbinds_by_default(self):
         # One per OID entry (alarmId..alarmSeverityLvl) -- a field silently

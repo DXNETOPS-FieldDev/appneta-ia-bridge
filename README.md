@@ -8,7 +8,7 @@ there when AppNeta clears them.
 It is a small Python service with no third-party dependencies, packaged with an nginx TLS front end
 in a single Docker image. Companion install bundles configure the Spectrum and Smarts side.
 
-- **Version:** 0.2.0
+- **Version:** 0.2.1
 - **Install:** [`INSTALLATION.md`](INSTALLATION.md)
 - **Changes:** [`CHANGELOG.md`](CHANGELOG.md)
 

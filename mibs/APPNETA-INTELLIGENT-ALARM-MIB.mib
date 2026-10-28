@@ -3,15 +3,15 @@ APPNETA-INTELLIGENT-ALARM-MIB DEFINITIONS ::= BEGIN
 IMPORTS
 	NOTIFICATION-TYPE, OBJECT-TYPE, MODULE-IDENTITY, Integer32
 		FROM SNMPv2-SMI
-	NOTIFICATION-GROUP, OBJECT-GROUP
+	NOTIFICATION-GROUP, OBJECT-GROUP, MODULE-COMPLIANCE
 		FROM SNMPv2-CONF
 	DisplayString
 		FROM SNMPv2-TC
-	apnEvents, apnNotifBranch, apnGroups
+	apnEvents, apnNotifBranch, apnGroups, orgId
 		FROM APPNETA-MIB;
 
 appnetaIntelligentAlarm MODULE-IDENTITY
-	LAST-UPDATED "202608241200Z"
+	LAST-UPDATED "202610281200Z"
 	ORGANIZATION
 		"appneta-ia-bridge (not an AppNeta Inc. publication)"
 	CONTACT-INFO
@@ -23,6 +23,14 @@ appnetaIntelligentAlarm MODULE-IDENTITY
 		Alarms are delivered by AppNeta only via webhook. Traps under this
 		MIB are generated and sent by the alarm-bridge tool, not by an
 		AppNeta appliance."
+	REVISION "202610281200Z"
+	DESCRIPTION
+		"Dropped this module's own orgId object (apnAlarm 2) in favour of
+		APPNETA-MIB::orgId (same meaning, same Integer32 syntax), which the
+		notifications now carry instead; the varbind OID changes from
+		1.3.6.1.4.1.19041.2.1.5.10.2 to 1.3.6.1.4.1.19041.2.1.5.1.5. Added
+		apnIntelligentAlarmObjGrp and apnIntelligentAlarmCompliance so every
+		object and notification belongs to a conformance group."
 	REVISION "202609101200Z"
 	DESCRIPTION
 		"Replaced the 18 family-only notifications with 36 (9 families x
@@ -68,13 +76,6 @@ alarmId OBJECT-TYPE
 		"The unique, stable identifier for this Intelligent Alarm instance,
 		constant across its RAISED/CLEARED lifecycle."
 	::= { apnAlarm 1 }
-
-orgId OBJECT-TYPE
-	SYNTAX     Integer32
-	MAX-ACCESS read-only
-	STATUS     current
-	DESCRIPTION "The AppNeta organization id."
-	::= { apnAlarm 2 }
 
 alarmType OBJECT-TYPE
 	SYNTAX     DisplayString
@@ -827,5 +828,26 @@ apnIntelligentAlarmGrp NOTIFICATION-GROUP
 	STATUS     current
 	DESCRIPTION "Group containing the Intelligent Alarm notifications."
 	::= { apnGroups 20 }
+
+apnIntelligentAlarmObjGrp OBJECT-GROUP
+	OBJECTS { alarmId, alarmType,
+		alarmSeverity, ruleId, ruleName,
+		alarmDescription, itemId, itemName,
+		itemType, alarmTarget, alarmMonitoringPointId,
+		alarmMonitoringPointName, monitoringPolicyId, monitoringPolicyName,
+		monitoringPolicyGroupId, monitoringPolicyGroupName, alarmEventTimestamp,
+		providerLink, alarmTags, alarmNetworkPathId32,
+		alarmMonitoringPointId32, alarmSeverityLvl, fieldNineTarget }
+	STATUS     current
+	DESCRIPTION "Group containing the Intelligent Alarm varbind objects."
+	::= { apnGroups 21 }
+
+apnIntelligentAlarmCompliance MODULE-COMPLIANCE
+	STATUS     current
+	DESCRIPTION "Compliance statement for the Intelligent Alarm trap sender."
+	MODULE -- this module
+		MANDATORY-GROUPS { apnIntelligentAlarmGrp,
+			apnIntelligentAlarmObjGrp }
+	::= { apnGroups 22 }
 
 END

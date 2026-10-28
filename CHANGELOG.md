@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.2.1
+
+Organization id OID fix, MIB lint cleanup and a reworked installation guide.
+
+- **Destination-side change (re-install required):** the organization id in each trap now uses
+  `APPNETA-MIB::orgId` (`1.3.6.1.4.1.19041.2.1.5.1.5`), the same object AppNeta's native traps carry,
+  instead of the bridge's own copy at `1.3.6.1.4.1.19041.2.1.5.10.2`. The value is unchanged. Run
+  `./intelligent_alarms.sh --spectroserver uninstall` (or `--smarts`) and install again so the alarm
+  mapping picks up the new OID; any custom rule that matched the old OID must be updated.
+- `APPNETA-INTELLIGENT-ALARM-MIB` no longer defines its own `orgId` (it imports the APPNETA-MIB one)
+  and now has an object group and compliance statement, so it compiles without `smilint` warnings.
+- `INSTALLATION.md` reworked: the self-signed certificate link leads step 2; the token is shown where
+  you use it (step 6); step 4 explains per-destination source addresses with a Spectrum VNA plus Smarts
+  example; step 5 lists the split Spectrum install first and covers MIB compilation by the installer,
+  copying the MIBs to other receivers, and that Smarts needs no MIB files; step 6 explains
+  `ignoreSSLErrors` for CA-issued and self-signed certificates and adds a connector example that
+  excludes Windows and macOS monitoring points; step 7 shows the bridge log line that confirms AppNeta
+  is delivering and how to read a failed-trap warning.
+
 ## v0.2.0
 
 Split Spectrum installs, MIB compile and install logging.

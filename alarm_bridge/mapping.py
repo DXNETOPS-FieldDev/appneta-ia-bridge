@@ -22,7 +22,7 @@ APN_NOTIF_BASE = "1.3.6.1.4.1.19041.2.1.103.0"
 # APPNETA-MIB's own object names when compiled together -- see the .mib file.
 OID = {
     "alarmId": f"{APN_ALARM_BASE}.1",
-    "orgId": f"{APN_ALARM_BASE}.2",
+    "orgId": "1.3.6.1.4.1.19041.2.1.5.1.5",  # APPNETA-MIB::orgId, shared with native AppNeta traps
     "alarmType": f"{APN_ALARM_BASE}.3",
     "alarmSeverity": f"{APN_ALARM_BASE}.4",
     "ruleId": f"{APN_ALARM_BASE}.5",

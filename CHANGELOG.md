@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.3
+
+Documentation for how Smarts uses `SOURCE_ADDRESS`.
+
+- `INSTALLATION.md` step 4 and `smarts-install/README.md`: Smarts attaches each alarm to the Host
+  element matching the source address (an existing Host if the IP resolves to one, otherwise a new
+  Host named after the IP), and how to check it with `dmctl`. Documentation only; no behavior change.
+
 ## v0.2.2
 
 Troubleshooting additions to the installation guide.

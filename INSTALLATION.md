@@ -35,7 +35,7 @@ that carry an `AppNetaPathIdentifier` attribute (`0x673009f`), or ask your Spect
 ```bash
 git clone https://github.com/DXNETOPS-FieldDev/appneta-ia-bridge.git appneta-ia-bridge
 cd appneta-ia-bridge
-git checkout v0.2.2
+git checkout v0.2.3
 docker build -t appneta-ia-bridge .
 ```
 
@@ -137,6 +137,15 @@ address is hidden or changes: NAT rewrites it, a container or host restart gets 
 the bridge is moved to another host. Without it, the receiver would have to match on the packet's
 source IP and the alarms would stop landing on the right object whenever that address drifted. Set it to `none` to send no claim. Do not use the IP address of
 another real device: its alarms would be routed to that device.
+
+How Smarts uses it: `sm_trapd` attaches each notification to the `Host` element that matches the
+trap's source address. With the claim, that address is `SOURCE_ADDRESS`. If Smarts already has a
+Host that resolves to that IP, the alarms attach to it; if not, Smarts creates a new `Host` named
+after the IP. Without the claim (`none`), the packet's source IP, the bridge host, is used the same
+way. This matching was verified on Smarts 25.4; it is observed behavior, not a documented Smarts
+setting. To check where alarms land, open a notification in the Smarts console, or run
+`dmctl -s INCHARGE-OI get ICS_Notification::<notification-name>` and read `ElementName` and
+`OccurredOn`.
 
 Non-default port or community: `TRAP_DESTINATION_<N>_PORT` and `TRAP_DESTINATION_<N>_COMMUNITY`.
 

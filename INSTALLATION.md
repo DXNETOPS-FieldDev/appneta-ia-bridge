@@ -240,24 +240,53 @@ After a successful `--spectroserver install` on a host without one, the installe
 ### Spectrum - SpectroSERVER and OneClick on separate hosts
 
 For a split install, copy the bundle to both hosts (see [Copy the bundle](#copy-the-bundle-to-the-destination-server)
-above), then:
+above), then run the procedure for each host. The SpectroSERVER steps below repeat the single-host
+procedure on purpose, so this section can be followed on its own.
 
-- **SpectroSERVER host:** all three steps of the single-host procedure below: install, restart SpectroSERVER, and
-  create the `AppNetaAdmin` model. This is also the host `TRAP_DESTINATION_<N>_HOST` points at.
-- **OneClick host:** become the account that owns the Spectrum installation and run
-  ```bash
-  cd /tmp/appneta-ia-bridge-install
-  ./intelligent_alarms.sh --oneclick --general install     # or --vna, matching the other host
-  ./intelligent_alarms.sh --oneclick status                # "Spectrum OneClick host: general installed"
-  ```
-  This installs only the alarm text files (`SG-Support/CsPCause/Prob*_en_US` and
-  `SG-Support/CsEvFormat/Event*_en_US`). OneClick reads them from its own host, live, so nothing
-  restarts. Without them the console shows `file Prob... was not found on this server` and events
-  read `...for which no event format file exists`. `--oneclick install` also runs the MIB compile, because
-  the MIB compiler belongs to the OneClick server.
+**SpectroSERVER host** (also the host `TRAP_DESTINATION_<N>_HOST` points at):
 
-  `--oneclick install` is refused on a host that has a SpectroSERVER (an `SS/` directory): that host gets
-  these files from `--spectroserver`, and `--oneclick` there would duplicate them. Use `--spectroserver` on it.
+1. Become the account that owns the Spectrum installation (not root) and install:
+   ```bash
+   sudo -u spectrum -i
+   cd /tmp/appneta-ia-bridge-install
+   ./intelligent_alarms.sh --spectroserver --general install      # or --vna
+   ./intelligent_alarms.sh --spectroserver status                 # "Spectrum: general installed"
+   ```
+   The installer prints `Using SPECTRUM_HOME=...`; confirm that it is your installation. If your
+   `spectrum80.env` is not in `/opt/SPECTRUM`, set `SPECTRUM_ENV_FILE` first. Every `install` and
+   `uninstall` writes a log, `logs/<yyyymmddhhmm>-install.log`, next to `intelligent_alarms.sh` (set
+   `IA_LOG_DIR` to put it elsewhere). This host has no `MibDatabase`, so the installer skips the MIB
+   compile here; `--oneclick install` does it on the OneClick host.
+2. Restart SpectroSERVER. If `SPECTRUM_HOME` is not set in your shell, set it to the directory
+   the installer printed:
+   ```bash
+   (cd "$SPECTRUM_HOME/bin" && ./stopSS.pl)
+   (cd "$SPECTRUM_HOME/bin" && ./startSS.pl)
+   ```
+3. In OneClick, create an `AppNetaAdmin` model for the bridge: **Locator** → **Universe** →
+   **Topology** tab → **Create New Model by Type** → `AppNetaAdmin`. Set **Name** (shown on each
+   alarm, for example `AppNeta Intelligent Alarms`) and **Monitoring Point IP Address** (the address
+   the bridge's traps are attributed to). Set `TRAP_DESTINATION_<N>_SOURCE_ADDRESS` (step 4) to this
+   same IP. Do not use the IP of another real device already modeled in Spectrum. Then, on the new
+   model's **Attributes** tab, set `map_traps_to_this_model_using_IP_header` (`0x3dc000b`) to `Yes`.
+   Without this, traps are not matched to the model.
+
+**OneClick host:**
+
+Become the account that owns the Spectrum installation and run:
+```bash
+cd /tmp/appneta-ia-bridge-install
+./intelligent_alarms.sh --oneclick --general install     # or --vna, matching the other host
+./intelligent_alarms.sh --oneclick status                # "Spectrum OneClick host: general installed"
+```
+This installs only the alarm text files (`SG-Support/CsPCause/Prob*_en_US` and
+`SG-Support/CsEvFormat/Event*_en_US`). OneClick reads them from its own host, live, so nothing
+restarts. Without them the console shows `file Prob... was not found on this server` and events
+read `...for which no event format file exists`. `--oneclick install` also runs the MIB compile, because
+the MIB compiler belongs to the OneClick server.
+
+`--oneclick install` is refused on a host that has a SpectroSERVER (an `SS/` directory): that host gets
+these files from `--spectroserver`, and `--oneclick` there would duplicate them. Use `--spectroserver` on it.
 
 Run `status` on each host when you finish. If an install stopped before the end (for example a MIB
 compile failure), `status` says `INCOMPLETE install`: fix the error and run `install` again.

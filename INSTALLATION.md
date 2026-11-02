@@ -13,7 +13,8 @@ You need:
 - A TLS certificate and private key for that name from a publicly trusted certificate authority.
   The certificate file must contain the full chain (your certificate followed by the
   intermediates).
-- Network access from that host to your trap receiver on UDP `162` (or your configured port).
+- Network access from that host to your trap receiver on UDP `162` (or your configured port). For
+  Spectrum the receiver is the SpectroSERVER host.
 - An AppNeta account that can create an alarm connector.
 - For Spectrum or Smarts: SSH access to the server and the account that owns the installation.
 
@@ -129,6 +130,16 @@ docker run -d \
 `APPNETA_V3_ID_OFFSET` to the offset between your v4 and v3 IDs instead (see
 [`README.md`](README.md#configuration)). The container refuses to start without one of them.
 
+`TRAP_DESTINATION_<N>_HOST` is the hostname or IP address of the server that **receives the SNMP traps**
+(UDP port 162 by default; override with `TRAP_DESTINATION_<N>_PORT`):
+
+- **Spectrum:** the **SpectroSERVER** host, the one that runs the SpectroSERVER process and the `AppNetaAdmin`
+  model. Not the OneClick web server, unless OneClick runs on the same host. If SpectroSERVER and OneClick
+  are on separate hosts, use the SpectroSERVER host; OneClick never receives the traps.
+- **Smarts:** the host that runs the Smarts SNMP trap adapter (`sm_trapd`).
+
+The bridge host needs a network path to that address on UDP 162 (firewalls included).
+
 `TRAP_DESTINATION_<N>_SOURCE_ADDRESS` is required for every destination. Set it to the IP address the
 receiver uses for the AppNeta device: the IP of the AppNeta model in Spectrum, or the element's IP in
 Smarts (for Spectrum, the same IP as the model's Monitoring Point IP Address; for Smarts, the host
@@ -185,14 +196,35 @@ and the container exits.
 
 ## 5. Install the destination side
 
-Copy the bundle from the Docker host to the destination server, then install it there.
+First copy the bundle from the Docker host to the destination server, then install it there.
 
-Which Spectrum layout do you have?
+### Copy the bundle to the destination server
+
+On the Docker host, in the directory where you cloned the repository (step 1), copy the bundle to each
+server that needs the installer. The `mkdir` makes sure the target directory exists, because `scp`
+with several files fails if it does not.
+
+For Spectrum (replace `spectrum-host` with the server's name; repeat for the OneClick host if it is a
+separate machine):
+
+```bash
+ssh spectrum-host 'mkdir -p /tmp/appneta-ia-bridge-install'
+scp -r intelligent_alarms.sh lib spectrum-install spectrum-install-general mibs \
+    spectrum-host:/tmp/appneta-ia-bridge-install/
+```
+
+For Smarts, use the copy command in the [Smarts](#smarts) section. For other receivers there is nothing
+to install; see [Other receivers](#other-snmp-trap-receivers).
+
+### Which Spectrum layout do you have?
 
 | Layout | Run |
 |---|---|
 | SpectroSERVER on one host, OneClick on another | `--spectroserver` on the SpectroSERVER host **and** `--oneclick` on the OneClick host, with the same mode (`general` or `vna`) on each. |
 | One host runs both SpectroSERVER and OneClick | `--spectroserver` only (see the single-host section below). It installs everything, including the alarm text files OneClick reads. |
+
+The bridge sends its traps to the **SpectroSERVER** host, so `TRAP_DESTINATION_<N>_HOST` (step 4) is that
+host in both layouts. The OneClick host receives no traps; it only needs the alarm text files above.
 
 Not sure which you have? A host with a `tomcat/` directory under its Spectrum directory runs OneClick.
 After a successful `--spectroserver install` on a host without one, the installer prints a reminder to run
@@ -200,10 +232,11 @@ After a successful `--spectroserver install` on a host without one, the installe
 
 ### Spectrum - SpectroSERVER and OneClick on separate hosts
 
-For a split install, copy the bundle to both hosts (step 1 of the single-host procedure below), then:
+For a split install, copy the bundle to both hosts (see [Copy the bundle](#copy-the-bundle-to-the-destination-server)
+above), then:
 
-- **SpectroSERVER host:** steps 2, 4 and 5 of the single-host procedure below (the `AppNetaAdmin` model lives on the
-  SpectroSERVER).
+- **SpectroSERVER host:** all three steps of the single-host procedure below: install, restart SpectroSERVER, and
+  create the `AppNetaAdmin` model. This is also the host `TRAP_DESTINATION_<N>_HOST` points at.
 - **OneClick host:** become the account that owns the Spectrum installation and run
   ```bash
   cd /tmp/appneta-ia-bridge-install
@@ -233,14 +266,10 @@ OneClick host, not something this bundle changes.
 ### Spectrum - SpectroSERVER and OneClick combined on a single host
 
 Use this when one host runs both SpectroSERVER and OneClick. Full prerequisites, backups, and rollback are in
-[`spectrum-install/README.md`](spectrum-install/README.md). Read its prerequisites first.
+[`spectrum-install/README.md`](spectrum-install/README.md). Read its prerequisites first, and copy the bundle
+to the server as shown in [Copy the bundle](#copy-the-bundle-to-the-destination-server).
 
-1. Copy the bundle:
-   ```bash
-   scp -r intelligent_alarms.sh lib spectrum-install spectrum-install-general mibs \
-       spectrum-host:/tmp/appneta-ia-bridge-install/
-   ```
-2. On the Spectrum server, become the account that owns the Spectrum installation (not root) and
+1. On the Spectrum server, become the account that owns the Spectrum installation (not root) and
    install:
    ```bash
    sudo -u spectrum -i
@@ -265,12 +294,12 @@ Use this when one host runs both SpectroSERVER and OneClick. Full prerequisites,
    cp /tmp/appneta-ia-bridge-install/mibs/*.mib /tmp/mib-compile/
    bash "$SPECTRUM_HOME/MibDatabase/scripts/BulkMibCompile.sh" -d /tmp/mib-compile -f "*.mib"
    ```
-3. Restart SpectroSERVER:
+2. Restart SpectroSERVER:
    ```bash
    (cd "$SPECTRUM_HOME/bin" && ./stopSS.pl)
    (cd "$SPECTRUM_HOME/bin" && ./startSS.pl)
    ```
-4. In OneClick, create an `AppNetaAdmin` model for the bridge: **Locator** → **Universe** →
+3. In OneClick, create an `AppNetaAdmin` model for the bridge: **Locator** → **Universe** →
    **Topology** tab → **Create New Model by Type** → `AppNetaAdmin`. Set **Name** (shown on each
    alarm, for example `AppNeta Intelligent Alarms`) and **Monitoring Point IP Address** (the
    address the bridge's traps are attributed to). With the v0.1.3 sender-identity claim, the
@@ -289,6 +318,7 @@ Prerequisites and verification are in [`smarts-install/README.md`](smarts-instal
 Smarts matches the traps by OID from its own `trap_mgr.conf`, so it does not need the MIB files.
 
 ```bash
+ssh smarts-host 'mkdir -p /tmp/appneta-ia-bridge-install'
 scp -r intelligent_alarms.sh lib smarts-install smarts-host:/tmp/appneta-ia-bridge-install/
 # on the Smarts server:
 cd /tmp/appneta-ia-bridge-install

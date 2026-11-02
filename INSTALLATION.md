@@ -135,7 +135,9 @@ docker run -d \
 
 - **Spectrum:** the **SpectroSERVER** host, the one that runs the SpectroSERVER process and the `AppNetaAdmin`
   model. Not the OneClick web server, unless OneClick runs on the same host. If SpectroSERVER and OneClick
-  are on separate hosts, use the SpectroSERVER host; OneClick never receives the traps.
+  are on separate hosts, use the SpectroSERVER host; OneClick never receives the traps. In a distributed
+  SpectroSERVER environment that uses Trap Director, use the SpectroSERVER designated as the Trap Director
+  server: it forwards each trap to the SpectroSERVER that models the device.
 - **Smarts:** the host that runs the Smarts SNMP trap adapter (`sm_trapd`).
 
 The bridge host needs a network path to that address on UDP 162 (firewalls included).
@@ -223,8 +225,13 @@ to install; see [Other receivers](#other-snmp-trap-receivers).
 | SpectroSERVER on one host, OneClick on another | `--spectroserver` on the SpectroSERVER host **and** `--oneclick` on the OneClick host, with the same mode (`general` or `vna`) on each. |
 | One host runs both SpectroSERVER and OneClick | `--spectroserver` only (see the single-host section below). It installs everything, including the alarm text files OneClick reads. |
 
-The bridge sends its traps to the **SpectroSERVER** host, so `TRAP_DESTINATION_<N>_HOST` (step 4) is that
+The bridge sends its traps to a **SpectroSERVER** host, so `TRAP_DESTINATION_<N>_HOST` (step 4) is that
 host in both layouts. The OneClick host receives no traps; it only needs the alarm text files above.
+
+If you run several SpectroSERVERs with Trap Director, point the bridge at the Trap Director SpectroSERVER and
+install the integration (`--spectroserver`) on the SpectroSERVER that holds the `AppNetaAdmin` model. Trap
+Director matches each trap to a model by the agent address in the trap, so after the install, confirm in
+step 7 that an alarm appears on the `AppNetaAdmin` model.
 
 Not sure which you have? A host with a `tomcat/` directory under its Spectrum directory runs OneClick.
 After a successful `--spectroserver install` on a host without one, the installer prints a reminder to run

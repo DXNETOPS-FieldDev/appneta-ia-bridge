@@ -233,6 +233,32 @@ the bridge is moved to another host. Without it, the receiver would have to matc
 source IP and the alarms would stop landing on the right object whenever that address drifted. Set it to `none` to send no claim. Do not use the IP address of
 another real device: its alarms would be routed to that device.
 
+Example. Every trap carries a source address, and Spectrum or Smarts uses it to decide which object the
+alarm belongs to. By default that is the address the packet came from, and for a container that is an
+private address on the Docker network. It is usually not an address the receiver knows, and it
+changes whenever you remove and recreate the container. Setting `SOURCE_ADDRESS` makes the bridge
+state the address itself, so the receiver sees the same one on every rebuild. Suppose the bridge runs
+on a host at `192.0.2.20`, and Spectrum has an AppNeta model at `192.0.2.50`:
+
+```
+-e TRAP_DESTINATION_1_SOURCE_ADDRESS=192.0.2.50
+```
+
+Every trap now says it is about `192.0.2.50`, however many times the container is recreated, and the
+alarms land on that model.
+
+With Spectrum, this value is tied to the `AppNetaAdmin` model you create in step 5. Spectrum matches
+an incoming trap to a model by IP address (IP-header trap mapping, which step 5 turns on), so
+`SOURCE_ADDRESS` must be exactly the **Monitoring Point IP Address** you give that model. Choose the
+address now, put it here, and enter the same one when you create the model. If the two differ, Spectrum
+cannot match the trap to the model and the alarms do not appear on it. The value is the address of the
+object you want the alarms on, not
+necessarily the bridge host's own address. The host's address (`192.0.2.20` here) is correct only if
+that address is the one Spectrum or Smarts models for the bridge, which is the usual choice with Smarts
+when the alarms should attach to the Host element for the bridge machine. An address the receiver has
+no element for does not match anything: Smarts creates a new `Host` named after it, so check where
+the alarms land.
+
 How Smarts uses it: `sm_trapd` attaches each notification to the `Host` element that matches the
 trap's source address. With the claim, that address is `SOURCE_ADDRESS`. If Smarts already has a
 Host that resolves to that IP, the alarms attach to it; if not, Smarts creates a new `Host` named

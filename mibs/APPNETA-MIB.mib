@@ -1,0 +1,587 @@
+
+APPNETA-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	NOTIFICATION-TYPE, OBJECT-TYPE, MODULE-IDENTITY,
+	enterprises, Integer32
+		FROM SNMPv2-SMI
+	NOTIFICATION-GROUP, OBJECT-GROUP
+		FROM SNMPv2-CONF
+	TEXTUAL-CONVENTION, DisplayString
+		FROM SNMPv2-TC;
+
+appneta MODULE-IDENTITY
+	LAST-UPDATED "202111041717Z"
+	ORGANIZATION
+		"AppNeta Inc."
+	CONTACT-INFO
+		"www.appneta.com"
+	DESCRIPTION
+		""
+	REVISION "202111041717Z"
+	DESCRIPTION
+		"Fixed syntax."
+
+	REVISION "202110070900Z"
+  	DESCRIPTION
+  		"Added enumerations for sysObjectID."
+
+	REVISION "201810231830Z"
+  	DESCRIPTION
+  		"Added back pathDesc. Added back pathTags and renamed it to pathEventDeliveryTime."
+
+	REVISION "201810192010Z"
+	DESCRIPTION
+		"Updated terminology, including changing the name of the mib from apparent to appneta"
+
+	REVISION "201810112300Z"
+	DESCRIPTION
+		"Removed obsolete leaves apnTestStateEvent, apnBatchEvent, pathDesc and branches apnBatch and pathview"
+
+	REVISION "201101201533Z"
+	DESCRIPTION
+		"The MIB definition for Apparent Networks products. It provides event support for the AppCritical
+		and PathView software through SNMP. The key functionality supported by this MIB is:
+		 - receive traps on AppCritical events
+		 - poll event information for PathView events"
+
+	REVISION "200901301135Z"
+	DESCRIPTION
+		"Removed incoming SNMP functionality"
+
+	REVISION "200609281514Z"
+	DESCRIPTION
+		"Updates for new test summary diagnostics, recommendations and readiness"
+
+	REVISION "200604041420Z"
+	DESCRIPTION
+		"Rebranded AppareNet as AppCritical in the mib, and under apparentProducts."
+
+	REVISION "200602161130Z"
+	DESCRIPTION
+		"Update to Sq events to have TestId, TargetType and SqdName
+		Update to Test events to have TargetType"
+
+	REVISION "200512080950Z"
+	DESCRIPTION
+		"Add Sequencer and Batch Events.
+		Update descriptions.
+		Removed unused event notifiers and created new ones."
+
+	REVISION "200510121545Z"
+	DESCRIPTION
+		"Added support for event notifications from AppareNet 2.9."
+
+	REVISION "200312181120Z"
+	DESCRIPTION
+		"Initial definition of the Apparent MIB for release with AppareNet 2.0"
+::= { enterprises 19041 }
+
+
+EventMeasuredParameterType ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION
+		"All of the available parameters for measuring on a path."
+	SYNTAX  INTEGER {
+		notApplicable (-1),
+		connectivityLoss (0),
+		qosChange (1),
+		networkRouteChange (2),
+		packetLoss (3),
+		totalCapacity (4),
+		latency (5),
+		avgJitter (6),
+		rtt (9),
+		mos (10),
+		voiceLoss (11),
+		voiceJitter (12),
+		utilizedCapacity (13),
+		availableCapacity (14),
+		utilizedCapacityPcnt (15),
+		availableCapacityPcnt (16),
+		totalCapacityTolerance (17),
+		totalCapacityTolerancePcnt (18),
+		dnsResolution (19),
+		connectionTime (20),
+		pageStart (21),
+		pageComplete (22),
+		pageSize (23),
+		httpThroughput (24),
+		httpStatus (25),
+		secondarySize (26),
+		secondaryTime (27),
+		limCapacity (28),
+		callLoad (29),
+		webTimingNetwork (30),
+		webTimingServer (31),
+		webTimingBrowser (32),
+		webTimingBrowserDom (33),
+		webTotalTime (34),
+		httpErrors (35),
+		webAuthenticationErrors (36),
+		webScriptErrors (37),
+		traceCount (38),
+		webApdex (39),
+		webApDexCount (40),
+		wirelessInterfaceErrors (41),
+		dhcpErrors (42),
+		udpRouteChange (46),
+		tcpRouteChange (47),
+		totalPacketSent (48),
+		packetSent (49),
+		packetReceived (50),
+		voicePacketSent (51),
+		voicePacketReceived (52)
+	}
+
+
+NisEventType ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION
+		"Describes what type of event the event is."
+	SYNTAX  INTEGER {
+		sqEventType (0),
+		monitoringPointEvent (3),
+		webSqEventType (4),
+		networkChangeEvent (19)
+	}
+
+
+MonitoringPointStatusType ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION
+		"Defines the status of the Monitoring Point as available or unavailable"
+	SYNTAX  INTEGER {
+		notApplicable (-1),
+		available (0),
+		unavailable (1),
+		removed (2),
+		new (3),
+		blocked (4)
+	}
+
+
+ServiceQualityType ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION
+		"Service Quality of a path or sqd.  Violated, Ok, Unknown or Connectivity Loss."
+	SYNTAX  INTEGER {
+		notApplicable (-1),
+		serviceQualityOk (10),
+		serviceQualityUnknown (20),
+		serviceQualityViolated (30),
+		serviceQualityConnectivityLoss (40)
+	}
+
+
+-- Global registrations are organized under this node. For example, MIB-2 sysObjectIds
+-- are organized under this node.
+
+appnetaGlobalReg     OBJECT IDENTIFIER ::= { appneta 1 }
+
+-- Global registrations for MIB-2 sysObjectIds associated with AppNeta
+-- products are organized under this node.
+
+appnetaProductOIDs   OBJECT IDENTIFIER ::= { appnetaGlobalReg 1 }
+appnetaProducts      OBJECT IDENTIFIER ::= { appneta 2 }
+appnetaAPM           OBJECT IDENTIFIER ::= { appnetaProducts 1 }
+apnEvents            OBJECT IDENTIFIER ::= { appnetaAPM 5 }
+apnNis               OBJECT IDENTIFIER ::= { apnEvents 1 }
+apnPath              OBJECT IDENTIFIER ::= { apnEvents 3 }
+apnSq                OBJECT IDENTIFIER ::= { apnEvents 4 }
+apnTest              OBJECT IDENTIFIER ::= { apnEvents 5 }
+apnMonitoringPoint   OBJECT IDENTIFIER ::= { apnEvents 6 }
+apnWebMonitor        OBJECT IDENTIFIER ::= { apnEvents 8 }
+apnNetworkChange     OBJECT IDENTIFIER ::= { apnEvents 9 }
+
+-- Enumerations for System Object ID values
+
+monitoringPoint   OBJECT IDENTIFIER ::= { appnetaProductOIDs 2 }
+unknown           OBJECT IDENTIFIER ::= { appnetaProductOIDs 255 }
+
+-- This group exists primarily to allow the apnNotifBranch to be given a number of 0, but still
+-- be defined after the rest of the variables have been defined.
+-- Basically, it works around a limitation in the MIB builder tool.
+
+apnNotifications     OBJECT IDENTIFIER ::= { appnetaAPM 103 }
+apnNotifBranch       OBJECT IDENTIFIER ::= { apnNotifications 0 }
+apnGroups            OBJECT IDENTIFIER ::= { appnetaAPM 104 }
+
+appnetaAPMSystemOID  OBJECT-TYPE
+	SYNTAX     OBJECT IDENTIFIER
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The authoritative identification of the AppNeta product. The OID
+		of this item is intended to be stored in the MIB-2 datum sysObjectId."
+	::= { appnetaProductOIDs 1 }
+
+eventId  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The unique event identifier for this event."
+	::= { apnNis 1 }
+
+eventTime  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The time the event occurred (UTC)."
+	::= { apnNis 2 }
+
+eventDetails  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"Brief description of the event."
+	::= { apnNis 3 }
+
+eventType  OBJECT-TYPE
+	SYNTAX     NisEventType
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The type of the event."
+	::= { apnNis 4 }
+
+orgId  OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The id of the organization."
+	::= { apnNis 5 }
+
+pathId  OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The unique identifier for the path."
+	::= { apnPath 1 }
+
+pathGroupId  OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The unique identifier for the group that the path belongs to."
+	::= { apnPath 2 }
+
+pathGroupName  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The name of the group that the path belongs to."
+	::= { apnPath 3 }
+
+pathTarget  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The target address of the path."
+	::= { apnPath 4 }
+
+pathTargetType  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The target type defined for the path."
+	::= { apnPath 5 }
+
+pathDesc  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The description for the path."
+	::= { apnPath 6 }
+
+pathEventDeliveryTime  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The timestamp at which the event was delivered."
+	::= { apnPath 7 }
+
+pathName  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The name of the path."
+	::= { apnPath 8 }
+
+sqPathServiceQuality  OBJECT-TYPE
+	SYNTAX     ServiceQualityType
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The service quality of the path at the time the event was generated."
+	::= { apnSq 1 }
+
+sqMeasuredParameter  OBJECT-TYPE
+	SYNTAX     EventMeasuredParameterType
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The service quality parameter that was violated or cleared causing the event (e.g. bandwidth)."
+	::= { apnSq 2 }
+
+sqMeasuredValue  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The value of service quality parameter that was violated or cleared (e.g. recent bandwidth measurement)"
+	::= { apnSq 3 }
+
+sqParameterState  OBJECT-TYPE
+	SYNTAX     ServiceQualityType
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The service quality of the parameter which caused the event (e.g. violated)."
+	::= { apnSq 4 }
+
+sqSqdName  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The name of the service quality definition (SQD) associated with the path."
+	::= { apnSq 5 }
+
+testId  OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The ID of the test."
+	::= { apnTest 1 }
+
+monitoringPointName  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The name of the Monitoring Point related to the event."
+	::= { apnMonitoringPoint 1 }
+
+monitoringPointStatus  OBJECT-TYPE
+	SYNTAX     MonitoringPointStatusType
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The availability status of the Monitoring Point"
+	::= { apnMonitoringPoint 2 }
+
+monitoringPointIp  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The IP address of the Monitoring Point"
+	::= { apnMonitoringPoint 3 }
+
+webMonitorId  OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The unique identifier for the web monitor."
+	::= { apnWebMonitor 1 }
+
+webAppName  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"Web Application name."
+	::= { apnWebMonitor 2 }
+
+webMilestoneName  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"Web Application script milestone name."
+	::= { apnWebMonitor 3 }
+
+webUrl  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"Web Application target."
+	::= { apnWebMonitor 4 }
+
+webMonitorDeepLink  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"Link to access detail of web monitor."
+	::= { apnWebMonitor 5 }
+
+protocol  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The protocol of the underlying trace route."
+	::= { apnNetworkChange 1 }
+
+previousNetworkSequence  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The previous sequence of networks."
+	::= { apnNetworkChange 2 }
+
+currentNetworkSequence  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The current sequence of networks."
+	::= { apnNetworkChange 3 }
+
+networkChangeDeeplink  OBJECT-TYPE
+	SYNTAX     DisplayString
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"A deeplink to the route visual including the network change."
+	::= { apnNetworkChange 4 }
+
+
+apnSqEvent  NOTIFICATION-TYPE
+	OBJECTS { eventDetails,
+		eventId,
+		eventTime,
+		eventType,
+		monitoringPointIp,
+		monitoringPointName,
+		pathGroupId,
+		pathGroupName,
+		pathEventDeliveryTime,
+		pathId,
+		pathName,
+		pathDesc,
+		pathTarget,
+		pathTargetType,
+		sqMeasuredParameter,
+		sqMeasuredValue,
+		sqParameterState,
+		sqPathServiceQuality,
+		sqSqdName,
+		testId }
+	STATUS     current
+	DESCRIPTION
+		"A trap to indicate that an SqaEvent has occurred."
+	::= { apnNotifBranch 50 }
+
+apnMonitoringPointEvent  NOTIFICATION-TYPE
+	OBJECTS { eventDetails,
+		eventId,
+		eventTime,
+		eventType,
+		monitoringPointIp,
+		monitoringPointName,
+		monitoringPointStatus }
+	STATUS     current
+	DESCRIPTION
+		"A trap to indicate that a Monitoring Point event has occurred."
+	::= { apnNotifBranch 53 }
+
+apnWebSqEvent  NOTIFICATION-TYPE
+	OBJECTS { eventDetails,
+		eventId,
+		eventTime,
+		eventType,
+		monitoringPointIp,
+		monitoringPointName,
+		webMonitorId,
+		webAppName,
+		webMilestoneName,
+		webUrl,
+		webMonitorDeepLink,
+		pathId,
+		sqMeasuredParameter,
+		sqMeasuredValue,
+		sqParameterState,
+		sqSqdName }
+	STATUS     current
+	DESCRIPTION
+		"A trap to indicate that an SqaEvent has occurred."
+	::= { apnNotifBranch 54 }
+
+apnNetworkChangeEvent  NOTIFICATION-TYPE
+	OBJECTS { eventTime,
+		eventType,
+		orgId,
+		pathId,
+		pathName,
+		pathTarget,
+		protocol,
+		previousNetworkSequence,
+		currentNetworkSequence,
+		networkChangeDeeplink }
+	STATUS     current
+	DESCRIPTION
+		"A trap to indicate that a NetworkChangeEvent has occurred."
+	::= { apnNotifBranch 55 }
+
+-- A group to contain all of the defined objects. Purely for completeness.
+
+apnObjGrp  OBJECT-GROUP
+	OBJECTS { appnetaAPMSystemOID,
+		eventDetails,
+		eventId,
+		eventTime,
+		eventType,
+		monitoringPointIp,
+		monitoringPointName,
+		monitoringPointStatus,
+		pathGroupId,
+		pathGroupName,
+		pathEventDeliveryTime,
+		pathId,
+		pathName,
+		pathDesc,
+		pathTarget,
+		pathTargetType,
+		sqMeasuredParameter,
+		sqMeasuredValue,
+		sqParameterState,
+		sqPathServiceQuality,
+		sqSqdName,
+		testId }
+	STATUS     current
+	DESCRIPTION
+		"Group containing all objects"
+	::= { apnGroups 10 }
+
+apnNotifGrp  NOTIFICATION-GROUP
+	NOTIFICATIONS { apnMonitoringPointEvent,
+		apnSqEvent,
+		apnWebSqEvent,
+		apnNetworkChangeEvent }
+	STATUS     current
+	DESCRIPTION
+		" A group to contain all of the defined notifications. Purely for completeness."
+	::= { apnGroups 11 }
+END
+
+
+-- This MIB was created using NuDesign Team's Visual MIBuilder (Ver 4.4).

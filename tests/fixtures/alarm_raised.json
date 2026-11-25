@@ -1,0 +1,32 @@
+{
+  "orgId": "18223",
+  "connectorName": "test-baseline",
+  "connectorType": "WEBHOOK",
+  "connectorId": "302",
+  "alarmId": "51a81650-4105-4e61-acc6-4e4f4fea0b9c",
+  "alarmType": "QUALITY_OF_SERVICE",
+  "state": "RAISED",
+  "alarmSeverity": "MAJOR",
+  "rule": "Testing Error - Connect",
+  "ruleId": "953",
+  "description": "Error equals Connect for 2 out of 3 samples",
+  "firstViolationTime": "2026-08-21T17:44:00.355+0000",
+  "raisedTime": "2026-08-21T17:46:33.051+0000",
+  "providerLink": "https://app-01.pm.appneta.com/pvc/ngp/alarm/51a81650-4105-4e61-acc6-4e4f4fea0b9c?orgId=18223",
+  "itemId": "2199023341939",
+  "itemName": "sign-example <-> DNS Example (dual)",
+  "itemType": "NETWORK_PATH",
+  "target": "dns.example.com",
+  "monitoringPointId": "2199023290416",
+  "monitoringPointName": "sign-example",
+  "monitoringPolicyId": "2199023255992",
+  "monitoringPolicyName": "DNS Example",
+  "monitoringPolicyGroupId": "2199023255603",
+  "monitoringPolicyGroupName": "AppNeta Mesh",
+  "tags": [
+    {"category": "Target Location", "value": "Los Angeles"},
+    {"category": "MP Type", "value": "c50"},
+    {"category": "Location", "value": "Helsinki Finland"}
+  ],
+  "noisyConditions": []
+}

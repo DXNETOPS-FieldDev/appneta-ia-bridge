@@ -1,0 +1,3 @@
+# Runtime has no pip install. The one third-party module, cryptography, is
+# provided by the OS package python3.11-cryptography in the container image
+# (see Dockerfile). For development, cryptography comes from requirements-dev.txt.

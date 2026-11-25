@@ -1,0 +1,2 @@
+# No exceptions. The image runs as an unprivileged user (USER 10001) and nginx listens on :8443,
+# so Trivy DS-0002 (no USER) no longer applies. Add an entry here only with a written reason.

@@ -1,0 +1,11 @@
+# General mode: a fixed severity per trap OID. CRITICAL/MAJOR create real alarms;
+# MINOR/WARNING are bare (logged event only, no EventDisp action at all).
+
+0x6732174 E 20 A 3,0x6732174,301
+0x6732175 E 20 C 0x6732174,301
+0x6732176 E 20 A 2,0x6732176,301
+0x6732177 E 20 C 0x6732176,301
+0x6732178
+0x6732179
+0x673217a
+0x673217b

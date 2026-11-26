@@ -268,6 +268,46 @@ volumes:
   ia-bridge-state:
 ```
 
+## Choosing the trap source address
+
+Every trap carries a source address, and Spectrum or Smarts uses it to decide which object the alarm
+belongs to. By default that is the address the packet came from, which for a container is a private
+address on the Docker network: the receiver does not know it, and it changes whenever the container is
+recreated. `TRAP_DESTINATION_<N>_SOURCE_ADDRESS` makes the bridge state the address itself, as
+`snmpTrapAddress.0`, so the receiver sees the same one on every rebuild.
+
+Example: the bridge runs on a host at `192.0.2.20` and Spectrum has an `AppNetaAdmin` model whose
+**Monitoring Point IP Address** is `192.0.2.50`. Set `-e TRAP_DESTINATION_1_SOURCE_ADDRESS=192.0.2.50`.
+Every trap says it is about `192.0.2.50`, and the alarms land on that model. The value is the address of
+the object you want the alarms on, not necessarily the bridge host's address; the host's address
+(`192.0.2.20`) is right only if that is the address Spectrum or Smarts models for the bridge. An address
+the receiver has no element for matches nothing, so check where the alarms land.
+
+Spectrum matches a trap to a model by IP address (IP-header trap mapping, which the install turns on), so
+the model's Monitoring Point IP Address and `SOURCE_ADDRESS` must be identical.
+
+Smarts: `sm_trapd` attaches each notification to the `Host` element that matches the trap's source
+address. If Smarts has a Host that resolves to that IP the alarms attach to it; otherwise Smarts creates
+a `Host` named after the IP. With `none`, the packet's source IP (the bridge host) is used the same way.
+This was verified on Smarts 25.4; it is observed behavior, not a documented setting. To see where alarms
+land, open a notification in the Smarts console, or run
+`dmctl -s INCHARGE-OI get ICS_Notification::<notification-name>` and read `ElementName` and `OccurredOn`.
+
+## Compiling the MIBs by hand
+
+You normally never do this: `intelligent_alarms.sh install` compiles both MIBs (`mibs/*.mib`) into
+Spectrum's `MibDatabase` as part of the install, and on a split install `--oneclick install` does it on
+the OneClick host. Compile by hand only if the install log shows the compile failed or was skipped on the
+host that has `MibDatabase`. Put both files in one directory first, because `APPNETA-INTELLIGENT-ALARM-MIB`
+imports `APPNETA-MIB`:
+
+```bash
+export SPECTRUM_HOME=<the directory the installer printed>
+mkdir -p /tmp/mib-compile
+cp /tmp/appneta-ia-bridge-install/mibs/*.mib /tmp/mib-compile/
+bash "$SPECTRUM_HOME/MibDatabase/scripts/BulkMibCompile.sh" -d /tmp/mib-compile -f "*.mib"
+```
+
 ## Stopping the container
 
 The bridge handles `SIGTERM`: it stops accepting requests, stops the delivery threads, writes a final summary

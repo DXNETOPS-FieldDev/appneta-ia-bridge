@@ -146,7 +146,8 @@ read-only at:
 ```
 
 The container does not start if either file is missing. The certificate's subject alternative names must include the
-DNS name in the connector URL. A certificate from a CA that AppNeta's servers trust lets AppNeta verify
+host in the connector URL (the DNS name, or the IP address if the URL uses one), even for a self-signed
+certificate. A certificate from a CA that AppNeta's servers trust lets AppNeta verify
 the bridge, with the connector's `ignoreSSLErrors` left `false`. A self-signed certificate also works if
 the connector sets `ignoreSSLErrors` to `true`; see
 [`INSTALLATION.md`](INSTALLATION.md#appendix-self-signed-certificate).

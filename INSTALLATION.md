@@ -35,6 +35,8 @@ that carry an `AppNetaPathIdentifier` attribute (`0x673009f`), or ask your Spect
 
 ## 1. Get the code and build the image
 
+**Run on: the Docker host.**
+
 Pick one way to get the code onto the Docker host. Both end in the same `appneta-ia-bridge`
 directory.
 
@@ -79,6 +81,8 @@ To review the code first, start with the [security summary in `README.md`](READM
 
 ## 2. Install the TLS certificate
 
+**Run on: the Docker host.** The certificate and key live there; AppNeta connects to this host.
+
 Pick one:
 
 - **A certificate from a CA** (public, or your organization's private CA): use it as below.
@@ -93,10 +97,19 @@ sudo install -m 644 fullchain.pem /etc/appneta-ia-bridge/tls/cert.pem
 sudo install -m 640 -g 10001 privkey.pem /etc/appneta-ia-bridge/tls/key.pem
 ```
 
-The certificate must be valid for the DNS name AppNeta will connect to (it must appear in the
-certificate's subject alternative names). AppNeta can verify a certificate from a CA its servers trust, so
-`ignoreSSLErrors` stays `false` in step 6. A self-signed certificate (or one from a CA AppNeta does not
-trust) cannot be verified, so step 6 sets `ignoreSSLErrors` to `true`.
+The certificate's subject alternative names must include the exact host in the connector URL (step 6):
+the DNS name, or the IP address if the URL uses one. This holds for self-signed certificates too;
+`ignoreSSLErrors` does not relax it. Check it now, using the line that matches your URL:
+
+```bash
+sudo openssl x509 -in /etc/appneta-ia-bridge/tls/cert.pem -noout -checkhost <dns-name-in-connector-url>
+sudo openssl x509 -in /etc/appneta-ia-bridge/tls/cert.pem -noout -checkip <ip-address-in-connector-url>
+```
+
+It must print `does match certificate`. On `does NOT match`, AppNeta stops the TLS handshake at the
+certificate, nothing reaches the bridge and its logs stay empty: fix the certificate before step 3.
+A CA-issued certificate that AppNeta's servers trust keeps `ignoreSSLErrors` `false` in step 6; a
+self-signed one (or one from a CA AppNeta does not trust) needs `true`.
 
 The container runs as the unprivileged uid/gid `10001`, never root. Every file you mount into it
 (the key above, the token and community in step 3) must therefore be readable by group `10001`:
@@ -119,6 +132,8 @@ Renew the certificate before it expires and restart the container (`docker resta
 appneta-ia-bridge`) to load it.
 
 ## 3. Create the authentication token
+
+**Run on: the Docker host.**
 
 The token is a shared secret that you choose. The bridge checks it on every request and AppNeta
 sends it. Generate it once into a file only root and the container's group can read:
@@ -157,6 +172,8 @@ sudo chmod 640 /etc/appneta-ia-bridge/secrets/trap_community
 
 ## 4. Run the container
 
+**Run on: the Docker host.** `<receiver-host>` below is the Spectrum or Smarts server, not the Docker host.
+
 One bridge can forward to several trap receivers at once, for example a Spectrum server and a
 Smarts server. Each receiver is a numbered *destination*: every setting that starts with
 `TRAP_DESTINATION_1_` configures the first receiver, `TRAP_DESTINATION_2_` the second, and so on.
@@ -164,12 +181,15 @@ Use a single `docker run` and repeat the numbered settings once per receiver; do
 container.
 
 ```bash
+# Fill in both <...> values before running:
+#   <receiver-host>       the host that receives the traps (SpectroSERVER, or the Smarts trap adapter host)
+#   <ip-of-appneta-model> must equal the Monitoring Point IP Address of the AppNetaAdmin model (step 5)
 docker run -d \
   --name appneta-ia-bridge \
   --restart unless-stopped \
   --log-opt max-size=10m --log-opt max-file=3 \
   -v ia-bridge-state:/var/lib/appneta-ia-bridge \
-  -e TRAP_DESTINATION_1_HOST=spectrum.example.com \
+  -e TRAP_DESTINATION_1_HOST=<receiver-host> \
   -e TRAP_DESTINATION_1_COMMUNITY_FILE=/run/secrets/trap_community \
   -e TRAP_DESTINATION_1_SCHEME=general \
   -e TRAP_DESTINATION_1_SOURCE_ADDRESS=<ip-of-appneta-model> \
@@ -224,49 +244,15 @@ settings to the same command, each with its own `_SOURCE_ADDRESS`:
 
 The bridge host needs a network path to that address on UDP 162 (firewalls included).
 
-`TRAP_DESTINATION_<N>_SOURCE_ADDRESS` is required for every destination. Set it to the IP address the
-receiver uses for the AppNeta device: the IP of the AppNeta model in Spectrum, or the element's IP in
-Smarts (for Spectrum, the same IP as the model's Monitoring Point IP Address; for Smarts, the host
-element the alarms should attach to). It is sent in each trap so the receiver can identify the device even when the bridge's real
-address is hidden or changes: NAT rewrites it, a container or host restart gets a new address, or
-the bridge is moved to another host. Without it, the receiver would have to match on the packet's
-source IP and the alarms would stop landing on the right object whenever that address drifted. Set it to `none` to send no claim. Do not use the IP address of
-another real device: its alarms would be routed to that device.
+`TRAP_DESTINATION_<N>_SOURCE_ADDRESS` is required for every destination: the IP address the receiver
+already knows the AppNeta device by. Do not use the IP of another real device (its alarms would be routed
+to it); `none` sends no claim.
 
-Example. Every trap carries a source address, and Spectrum or Smarts uses it to decide which object the
-alarm belongs to. By default that is the address the packet came from, and for a container that is an
-private address on the Docker network. It is usually not an address the receiver knows, and it
-changes whenever you remove and recreate the container. Setting `SOURCE_ADDRESS` makes the bridge
-state the address itself, so the receiver sees the same one on every rebuild. Suppose the bridge runs
-on a host at `192.0.2.20`, and Spectrum has an AppNeta model at `192.0.2.50`:
+- **Spectrum:** the **Monitoring Point IP Address** of the `AppNetaAdmin` model you create in step 5.
+  Choose it now and enter the same address there. If they differ, the alarms do not appear on the model.
+- **Smarts:** the IP of the Host element the alarms should attach to.
 
-```
--e TRAP_DESTINATION_1_SOURCE_ADDRESS=192.0.2.50
-```
-
-Every trap now says it is about `192.0.2.50`, however many times the container is recreated, and the
-alarms land on that model.
-
-With Spectrum, this value is tied to the `AppNetaAdmin` model you create in step 5. Spectrum matches
-an incoming trap to a model by IP address (IP-header trap mapping, which step 5 turns on), so
-`SOURCE_ADDRESS` must be exactly the **Monitoring Point IP Address** you give that model. Choose the
-address now, put it here, and enter the same one when you create the model. If the two differ, Spectrum
-cannot match the trap to the model and the alarms do not appear on it. The value is the address of the
-object you want the alarms on, not
-necessarily the bridge host's own address. The host's address (`192.0.2.20` here) is correct only if
-that address is the one Spectrum or Smarts models for the bridge, which is the usual choice with Smarts
-when the alarms should attach to the Host element for the bridge machine. An address the receiver has
-no element for does not match anything: Smarts creates a new `Host` named after it, so check where
-the alarms land.
-
-How Smarts uses it: `sm_trapd` attaches each notification to the `Host` element that matches the
-trap's source address. With the claim, that address is `SOURCE_ADDRESS`. If Smarts already has a
-Host that resolves to that IP, the alarms attach to it; if not, Smarts creates a new `Host` named
-after the IP. Without the claim (`none`), the packet's source IP, the bridge host, is used the same
-way. This matching was verified on Smarts 25.4; it is observed behavior, not a documented Smarts
-setting. To check where alarms land, open a notification in the Smarts console, or run
-`dmctl -s INCHARGE-OI get ICS_Notification::<notification-name>` and read `ElementName` and
-`OccurredOn`.
+Why it exists, a worked example and how Smarts uses it: [`REFERENCE.md`](REFERENCE.md#choosing-the-trap-source-address).
 
 `TRAP_DESTINATION_<N>_COMMUNITY_FILE` (or `TRAP_DESTINATION_<N>_COMMUNITY`) is **required**: the SNMP
 community string the receiver expects, with no default. Put it in a file next to the other secrets
@@ -363,6 +349,8 @@ job, every series and the full alert list are in
 [`REFERENCE.md`](REFERENCE.md#metrics-for-prometheus-and-grafana).
 
 ## 5. Install the destination side
+
+**Run on: the Spectrum or Smarts server** (the Docker host only for the copy). Each sub-section says which.
 
 First copy the bundle from the Docker host to the destination server, then install it there.
 
@@ -488,14 +476,8 @@ to the server as shown in [Copy the bundle](#copy-the-bundle-to-the-destination-
    The installer also compiles both MIBs (`mibs/*.mib`) into Spectrum's `MibDatabase` and exits `1` if
    either fails to compile; read the install log to confirm. A host with no `MibDatabase` (for example
    the SpectroSERVER host of a split install) skips the compile. There, `--oneclick install` does it
-   on the OneClick host. To compile by hand instead, on the host that has `MibDatabase`, with both
-   files in the same directory:
-   ```bash
-   export SPECTRUM_HOME=<the directory printed above>
-   mkdir -p /tmp/mib-compile
-   cp /tmp/appneta-ia-bridge-install/mibs/*.mib /tmp/mib-compile/
-   bash "$SPECTRUM_HOME/MibDatabase/scripts/BulkMibCompile.sh" -d /tmp/mib-compile -f "*.mib"
-   ```
+   on the OneClick host. You do not compile the MIBs yourself; the manual procedure is in
+   [`REFERENCE.md`](REFERENCE.md#compiling-the-mibs-by-hand) for the rare case you need it.
 2. Restart SpectroSERVER:
    ```bash
    (cd "$SPECTRUM_HOME/bin" && ./stopSS.pl)
@@ -548,6 +530,8 @@ receiver loads MIBs from, then load them as your receiver's documentation descri
 `APPNETA-MIB` first: `APPNETA-INTELLIGENT-ALARM-MIB` imports it.
 
 ## 6. Create the AppNeta connector
+
+**Do in: the AppNeta web interface**, in a browser. The only values from your servers are the Docker host's address and the token from step 3.
 
 In AppNeta, create an alarm connector of type **Webhook** (see [Alarms —
 Connectors](https://techdocs.broadcom.com/us/en/ca-enterprise-software/it-operations-management/appneta/GA/alarms-set-up/alarms-connectors.html)
@@ -637,6 +621,8 @@ Notes:
   AppNeta delivers from its own cloud, so the source addresses are not yours.
 
 ## 7. Verify
+
+**Run on: any machine that can reach the Docker host** for the webhook checks; the Docker host for `docker logs`; the Spectrum or Smarts server to see the alarm.
 
 1. **The bridge accepts a request.** From any machine that can reach it (add `-k` only if you use a
    self-signed certificate):
@@ -729,11 +715,13 @@ Notes:
 ## Appendix: self-signed certificate
 
 If you have no CA-issued certificate, a self-signed one works as long as the AppNeta
-connector sets `ignoreSSLErrors` to `true`. This disables AppNeta's check of the server's identity,
-so use it for evaluation, not production.
+connector sets `ignoreSSLErrors` to `true`, and the certificate names the host in the connector URL (see
+step 2). `ignoreSSLErrors` lets AppNeta accept a certificate it cannot trace to a trusted CA; it does not
+excuse a name that does not match. Use it for evaluation, not production.
 
 ```bash
 sudo install -d -m 755 /etc/appneta-ia-bridge/tls
+# The SAN must be the host in the connector URL: DNS:<name>, or IP:<address> if the URL uses an IP.
 sudo openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
   -keyout /etc/appneta-ia-bridge/tls/key.pem -out /etc/appneta-ia-bridge/tls/cert.pem \
   -subj "/CN=ia-bridge.example.com" \

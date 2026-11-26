@@ -249,7 +249,8 @@ already knows the AppNeta device by. Do not use the IP of another real device (i
 to it); `none` sends no claim.
 
 - **Spectrum:** the **Monitoring Point IP Address** of the `AppNetaAdmin` model you create in step 5.
-  Choose it now and enter the same address there. If they differ, the alarms do not appear on the model.
+  The simplest choice is the IP address of this Docker host. Enter the same address as the model's
+  Monitoring Point IP Address in step 5. If they differ, the alarms do not appear on the model.
 - **Smarts:** the IP of the Host element the alarms should attach to.
 
 Why it exists, a worked example and how Smarts uses it: [`REFERENCE.md`](REFERENCE.md#choosing-the-trap-source-address).
@@ -420,8 +421,8 @@ procedure on purpose, so this section can be followed on its own.
 3. In OneClick, create an `AppNetaAdmin` model for the bridge: **Locator** → **Universe** →
    **Topology** tab → **Create New Model by Type** → `AppNetaAdmin`. Set **Name** (shown on each
    alarm, for example `AppNeta Intelligent Alarms`) and **Monitoring Point IP Address** (the address
-   the bridge's traps are attributed to). Set `TRAP_DESTINATION_<N>_SOURCE_ADDRESS` (step 4) to this
-   same IP. Do not use the IP of another real device already modeled in Spectrum. Then, on the new
+   the bridge's traps are attributed to; the simplest choice is the IP address of the Docker host). Set
+   `TRAP_DESTINATION_<N>_SOURCE_ADDRESS` (step 4) to this same IP. Do not use the IP of another real device already modeled in Spectrum. Then, on the new
    model's **Attributes** tab, set `map_traps_to_this_model_using_IP_header` (`0x3dc000b`) to `Yes`.
    Without this, traps are not matched to the model.
 
@@ -486,7 +487,8 @@ to the server as shown in [Copy the bundle](#copy-the-bundle-to-the-destination-
 3. In OneClick, create an `AppNetaAdmin` model for the bridge: **Locator** → **Universe** →
    **Topology** tab → **Create New Model by Type** → `AppNetaAdmin`. Set **Name** (shown on each
    alarm, for example `AppNeta Intelligent Alarms`) and **Monitoring Point IP Address** (the
-   address the bridge's traps are attributed to). With the v0.1.3 sender-identity claim, the
+   address the bridge's traps are attributed to; the simplest choice is the IP address of the Docker host).
+   With the v0.1.3 sender-identity claim, the
    bridge no longer needs to be the real sender of this address: set
    `TRAP_DESTINATION_<N>_SOURCE_ADDRESS` to this same IP. Do not use the IP of another real device
    already modeled in Spectrum. Then, on the new model's **Attributes** tab, set

@@ -276,6 +276,9 @@ address on the Docker network: the receiver does not know it, and it changes whe
 recreated. `TRAP_DESTINATION_<N>_SOURCE_ADDRESS` makes the bridge state the address itself, as
 `snmpTrapAddress.0`, so the receiver sees the same one on every rebuild.
 
+Most installs use the Docker host's own address as both the model's address and `SOURCE_ADDRESS`; that is the simplest
+setup. The example below uses two different addresses to show that the model's address is the one that counts.
+
 Example: the bridge runs on a host at `192.0.2.20` and Spectrum has an `AppNetaAdmin` model whose
 **Monitoring Point IP Address** is `192.0.2.50`. Set `-e TRAP_DESTINATION_1_SOURCE_ADDRESS=192.0.2.50`.
 Every trap says it is about `192.0.2.50`, and the alarms land on that model. The value is the address of
